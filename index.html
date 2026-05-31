@@ -665,521 +665,583 @@ document.getElementById('btn-pve').addEventListener('click',async()=>{
 
 // ── PHONETIC CORRECTION ───────────────────────
 const PHONETIC_MAP=[
-  // ━━━ VOSK SPANISH PHONETIC ANALYSIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Rules: W→"gu"(before a/o) or "u"; X→"ks"/"s"/"x"; TH→"s"/"t";
-  //        SH→"sh"/"y"/"ch"; PH→"f"; double letters→single;
-  //        English schwa→"e"/"a"; ending -er→"er"/"a"; -tion→"sion"/"ción"
+  // ━━━ STRATEGY: Spanish translations → English item names
+  // Vosk ES phonetics → English item names  
+  // Both approaches combined for maximum coverage
 
-  // ━━━ HIGH VALUE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // LEDX: L-E-D-X → "le dex","el dex","le d ex","ele de equis","le deks"
-  [/\b(le\s?d[eé]x|led\s?ex|le\s?d\s?ex|l\s?e\s?d\s?x|ledx|le\s?deck|el\s?dex|eldex|eledex|ele\s?de\s?equis|el\s?de\s?equis|le\s?de\s?ex|le\s?deks)\b/i,'LEDX'],
-  // GPU: G-P-U → "jipiu","ge pe u","gé pé u","yipiu" (G soft in ES)
-  [/\b(gpu|g\.p\.u|jipiu|yipiu|gé\s?pé\s?u|ge\s?pe\s?u|tarjeta\s?(gráfica|grafica|de\s?video)|graphics?\s?card)\b/i,'GPU'],
-  // CPU: C-P-U → "se pe u","cepeu","sé pé u","ce pe u"
-  [/\b(cpu|c\.p\.u|cepeu|se\s?pe\s?u|sé\s?pé\s?u|ce\s?pe\s?u|procesador)\b/i,'CPU'],
-  // SSD: S-S-D → "ese ese de","doble ese de"
-  [/\b(ssd|s\.s\.d|ese\s?ese\s?de|doble\s?ese\s?de|solid\s?state)\b/i,'SSD'],
-  // HDD: H-D-D → "hache de de","aché dé dé" (H is silent in ES)
-  [/\b(hdd|h\.d\.d|disco\s?duro|hard\s?drive|hache\s?de\s?de|aché\s?dé\s?dé)\b/i,'HDD'],
-  // Bitcoin: BIT-COIN → "bit con","bitcón","bi con" (W→u, oi→oi)
-  [/\b(bitcoin|bit\s?coin|bit\s?con|bitcón|bi\s?con|btc|criptomoneda)\b/i,'Bitcoin'],
-  // Virtex: VIR-TEX → "virtec","bírtex","bir teks" (V=B in ES)
-  [/\b(virtex|virtec|bírtex|bir\s?teks|vir\s?tex|vér\s?tex|birte)\b/i,'Virtex'],
-  // VPX Flash: V-P-X → "ve pe equis","bé pe equis"
-  [/\b(vpx|v\.p\.x|ve\s?pe\s?equis|bé\s?pe\s?equis|flash\s?storage|vpx\s?flash)\b/i,'VPX Flash Storage Module'],
-  // Roler: RO-LER → "rolar","ró ler" (watch brand)
-  [/\b(roler|rolex|roller|rolar|ró\s?ler|rol\s?er|reloj\s?roler|reloj\s?lujoso)\b/i,'Roler'],
-  // Defibrillator: DE-FI-BRI-LLA-TOR → "desfibrilador","defibri","des fibri"
-  [/\b(defibrillator|defibrilator|desfibrilador|defibri|des\s?fibri|desfibrila|desfibrilatorio|defibrilator)\b/i,'Defibrillator'],
-  // Ophthalmoscope: OFF-THAL-MO-SCOPE → "oftalmoscopio","oftalmos","optalmo"
-  [/\b(ophthalmoscope|optalmoscope|oftalmoscopio|oftalmos|optalmo|ofta\s?moscopio|oscope|o\s?scope|oftalmo)\b/i,'Ophthalmoscope'],
-  // Tetriz: TET-RIZ → "tetris","tétrys","te triz","te tris"
-  [/\b(tetriz|tetris|tetryz|te\s?triz|te\s?tris|tétrys|tetri)\b/i,'Tetriz'],
-  // Moonshine: MOON-SHINE → "moonchine","munchine","luna brillo" (SH→ch/sh)
-  [/\b(moonshine|moon\s?shine|moonchine|munchine|moon\s?chine|luna\s?brillo|moon\s?shin)\b/i,'Moonshine'],
-  // Intelligence folder → "carpeta intel","inteligencia"
-  [/\b(intelligence|intel\s?folder|carpeta\s?intel|folder\s?intel|carpeta\s?inteligencia|informe)\b/i,'Intelligence folder'],
-  // GP Coin: G-P → "moneda gp","je pe","ge pe"
-  [/\b(gp\s?coin|moneda\s?gp|gp\s?moneda|gold\s?piece|je\s?pe\s?coin|ge\s?pe\s?coin)\b/i,'GP coin'],
-  // Military COFDM: → "cofdm","señal militar"
-  [/\b(cofdm|co\s?ef\s?de|military\s?cofdm|military\s?signal|señal\s?militar|transmisor\s?militar)\b/i,'Military COFDM Wireless Signal Transmitter'],
-  // IBX Gigachad: → "ibex","ibix","gigachad"
-  [/\b(ibx|ibex|ibix|gigachad|i\s?b\s?x|ib\s?ex)\b/i,'IBX Gigachad cryptographic processor'],
-  // Roler watch → already above
+  // ━━━ HIGH VALUE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(le\s?d[eé]x|led\s?ex|le\s?d\s?ex|l\s?e\s?d\s?x|ledx|le\s?deck|el\s?dex|eldex|eledex|ele\s?de\s?equis|le\s?de\s?ex|le\s?deks)\b/i,'LEDX'],
+
+  // GPU — ES: "tarjeta gráfica","tarjeta de video" — Vosk: "jipiu","yipiu","ge pe u"
+  [/\b(tarjeta\s?(gráfica|grafica|de\s?video)|graphics?\s?card|gráfica\s?tarkov)\b/i,'Graphics card'],
+  [/\b(gpu|g\.p\.u|jipiu|yipiu|gé\s?pé\s?u|ge\s?pe\s?u)\b/i,'GPU'],
+
+  // CPU fan FIRST (before CPU alone) — ES: "disipador de cpu","ventilador de cpu"
+  [/\b(disipador\s?de?\s?cpu|ventilador\s?de?\s?cpu|disipador\s?cpu|cooler\s?cpu|fan\s?cpu|cpu\s?fan|enfriador\s?cpu)\b/i,'CPU fan'],
+
+  // CPU — ES: "procesador de pc","cpu de pc" — Vosk: "se pe u","ce pe u","cepeu"
+  [/\b(cpu\s?de\s?pc|pc\s?cpu|procesador\s?de\s?pc)\b/i,'CPU'],
+  [/\b(cpu|c\.p\.u|cepeu|se\s?pe\s?u|sé\s?pé\s?u|ce\s?pe\s?u|\bprocesador\b)\b/i,'CPU'],
+
+  // SSD — ES: "disco sólido","unidad de estado sólido"
+  [/\b(ssd|s\.s\.d|ese\s?ese\s?de|doble\s?ese\s?de|solid\s?state|disco\s?s[oó]lido|unidad\s?de\s?estado\s?s[oó]lid[oa]|unidad\s?s[oó]lida)\b/i,'SSD'],
+
+  // HDD — ES: "disco duro","unidad de disco"
+  [/\b(hdd|h\.d\.d|disco\s?duro|hard\s?drive|unidad\s?de\s?disco|hache\s?de\s?de)\b/i,'HDD'],
+
+  // Damaged HDD — ES: "disco duro dañado"
+  [/\b(damaged\s?hard\s?drive|disco\s?duro\s?da[nñ]ado|disco\s?duro\s?roto|damaged\s?drive)\b/i,'Damaged hard drive'],
+
+  // Bitcoin — ES: "bitcoin","moneda virtual"  Vosk: "bit con","bitcón"
+  [/\b(bitcoin|bit\s?coin|bit\s?con|bitcón|bi\s?con|btc|criptomoneda|moneda\s?virtual)\b/i,'Bitcoin'],
+
+  // Virtex — Vosk: "virtec","bírtex","birteks"
+  [/\b(virtex|virtec|bírtex|bir\s?teks|vir\s?tex)\b/i,'Virtex'],
+
+  // VPX Flash Storage — ES: "módulo de almacenamiento vpx"  Vosk: "ve pe equis"
+  [/\b(vpx|v\.p\.x|ve\s?pe\s?equis|bé\s?pe\s?equis|flash\s?storage|vpx\s?flash|almacenamiento\s?vpx)\b/i,'VPX Flash Storage Module'],
+
+  // Roler watch — ES: "reloj roler","reloj de lujo"  Vosk: "rolar","ró ler"
+  [/\b(roler|rolex|roller|rolar|ró\s?ler|rol\s?er|reloj\s?roler|reloj\s?(de\s?lujo|lujoso))\b/i,'Roler'],
+
+  // Defibrillator — ES: "desfibrilador"  Vosk: "defibri","des fibri"
+  [/\b(defibrillator|defibrilator|desfibrilador|defibri|des\s?fibri|desfibrila|desfibrilatorio)\b/i,'Defibrillator'],
+
+  // Ophthalmoscope — ES: "oftalmoscopio"  Vosk: "oftalmos","optalmo"
+  [/\b(ophthalmoscope|optalmoscope|oftalmoscopio|oftalmos|optalmo|oscope|oftalmo)\b/i,'Ophthalmoscope'],
+
+  // Tetriz — Vosk: "tetris","te triz"
+  [/\b(tetriz|tetris|tetryz|te\s?triz|te\s?tris|tétrys)\b/i,'Tetriz'],
+
+  // Moonshine — ES: "aguardiente"  Vosk: "moonchine","munchine"
+  [/\b(moonshine|moon\s?shine|moonchine|munchine|moon\s?chine|luna\s?brillo|aguardiente|moon\s?shin)\b/i,'Moonshine'],
+
+  // Intelligence folder — ES: "carpeta de inteligencia","informe de inteligencia"
+  [/\b(intelligence\s?folder|carpeta\s?de?\s?inteligencia|informe\s?de\s?inteligencia|intel\s?folder|carpeta\s?intel)\b/i,'Intelligence folder'],
+
+  // GP Coin — ES: "moneda gp","pieza de oro"
+  [/\b(gp\s?coin|moneda\s?gp|pieza\s?de\s?oro|gold\s?piece|je\s?pe\s?coin|ge\s?pe\s?coin)\b/i,'GP coin'],
+
+  // Military COFDM — ES: "transmisor inalámbrico militar"
+  [/\b(cofdm|military\s?cofdm|military\s?signal|señal\s?militar|transmisor\s?militar|transmisor\s?inalámbrico)\b/i,'Military COFDM Wireless Signal Transmitter'],
+
+  // IBX Gigachad — ES: "procesador criptográfico"
+  [/\b(ibx|ibex|ibix|gigachad|i\s?b\s?x|procesador\s?criptográfico|procesador\s?ibx)\b/i,'IBX Gigachad cryptographic processor'],
 
   // ━━━ FIGURINES & VALUABLES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [/\b(horse\s?figurine|horse\s?figure|figurita\s?caballo|figura\s?caballo|caballo)\b/i,'Horse figurine'],
-  [/\b(cat\s?figurine|cat\s?figure|figurita\s?gato|figura\s?gato|gato\s?figura)\b/i,'Cat figurine'],
-  [/\b(lion\s?figurine|lion\s?figure|figurita\s?leon|figura\s?leon|leon\s?figura)\b/i,'Lion figurine'],
-  [/\b(bronze\s?lion|bronce\s?leon|leon\s?bronce)\b/i,'Bronze lion'],
-  [/\b(raven\s?figurine|raven\s?figure|figura\s?cuervo|cuervo\s?figura|cuervo)\b/i,'Raven figurine'],
-  [/\b(antique\s?axe|antique\s?hatchet|hacha\s?antigua|hacha\s?antígua)\b/i,'Antique axe'],
-  [/\b(chainlet|chain\s?let|cadena\s?pulsera|pulsera\s?cadena|chain\s?bracelet)\b/i,'Chainlet'],
-  [/\b(gold\s?chain|cadena\s?oro|collar\s?oro|cadena\s?dorada)\b/i,'Gold chain'],
-  [/\b(silver\s?ring|anillo\s?plata|aro\s?plata|silver\s?bracelet)\b/i,'Silver ring'],
-  [/\b(golden\s?1gphone|golden\s?smartphone|gphone\s?dorado|teléfono\s?dorado)\b/i,'Golden 1GPhone smartphone'],
-  [/\b(broken\s?gphone|gphone\s?roto|gphone\s?broken|broken\s?smartphone)\b/i,'Broken GPhone smartphone'],
-  [/\b(prokill|pro\s?kill|medall[oó]n|medallion|chain\s?prokill)\b/i,'Chain with Prokill Medallion'],
+  // ES names: "figurita de caballo", "figurita de gato", etc.
+  [/\b(horse\s?figurine|horse\s?figure|figurita\s?de?\s?caballo|figura\s?de?\s?caballo|figurita\s?caballo)\b/i,'Horse figurine'],
+  [/\b(cat\s?figurine|cat\s?figure|figurita\s?de?\s?gato|figura\s?de?\s?gato)\b/i,'Cat figurine'],
+  [/\b(lion\s?figurine|lion\s?figure|figurita\s?de?\s?le[oó]n|figura\s?de?\s?le[oó]n)\b/i,'Lion figurine'],
+  [/\b(bronze\s?lion|le[oó]n\s?de\s?bronce|bronce\s?le[oó]n)\b/i,'Bronze lion'],
+  [/\b(raven\s?figurine|raven\s?figure|figura\s?de?\s?cuervo|figurita\s?de?\s?cuervo)\b/i,'Raven figurine'],
+  [/\b(antique\s?axe|antique\s?hatchet|hacha\s?antigua|hacha\s?antígua|hacha\s?ant[iíi]gua)\b/i,'Antique axe'],
+  [/\b(chainlet|cadena\s?pulsera|pulsera\s?de\s?cadena|chain\s?bracelet)\b/i,'Chainlet'],
+  [/\b(gold\s?chain|cadena\s?de\s?oro|collar\s?de\s?oro|cadena\s?dorada)\b/i,'Gold chain'],
+  [/\b(silver\s?ring|anillo\s?de\s?plata|anillo\s?plateado|silver\s?bracelet)\b/i,'Silver ring'],
+  [/\b(prokill\s?medallion|medallón\s?prokill|cadena\s?prokill|chain\s?prokill)\b/i,'Chain with Prokill Medallion'],
 
   // ━━━ MEDICAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Salewa: SA-LE-WA → W before A = "gu" → "sale agua","sale gua","sale legua"
-  [/\b(sale\s?agua|sale\s?gua|sale\s?legua|san\s?legua|sale\s?wa|zalea|zale\s?wa|salewa|saleva|saliba|saleba|saliva|salevá|sale\s?ba|sale\s?va|sa\s?le\s?wa)\b/i,'Salewa'],
-  // Grizzly: GRIZ-LI → "gris li","grisley","grizli"
+  // Salewa — ES: "salewa" (no translation, but Vosk variants)
+  [/\b(sale\s?agua|sale\s?gua|sale\s?legua|san\s?legua|sale\s?wa|salewa|saleva|saliba|saleba|saliva|salevá|sale\s?ba|sale\s?va|sa\s?le\s?wa)\b/i,'Salewa'],
+
+  // Grizzly — ES: "grizzly" (no translation)  Vosk: "gris li"
   [/\b(grizzly|grisly|grizzley|grizzli|grisley|grisli|gris\s?li|gri\s?zli)\b/i,'Grizzly'],
-  // AFAK: A-F-A-K → "efak","a ef a ka"
-  [/\b(afak|a\s?fak|ifak|eye\s?fak|a\s?f\s?a\s?k|efak|a\s?ef\s?a\s?ka)\b/i,'AFAK'],
-  // IFAK: I-F-A-K → "ifak","i ef a ka"
-  [/\b(\bifak\b|i\s?fak|i\s?f\s?a\s?k|i\s?ef\s?a\s?ka)\b/i,'IFAK'],
-  // Surv12: SURV-12 → "serve 12","surf 12","surb doce"
+
+  // AFAK — ES: "botiquín afak"  Vosk: "efak","a ef a ka"
+  [/\b(afak|a\s?fak|ifak|eye\s?fak|a\s?f\s?a\s?k|efak|a\s?ef\s?a\s?ka|botiquín\s?afak)\b/i,'AFAK'],
+
+  // IFAK — ES: "botiquín ifak"
+  [/\b(\bifak\b|i\s?fak|i\s?f\s?a\s?k|botiquín\s?ifak)\b/i,'IFAK'],
+
+  // Surv12 — Vosk: "serve 12","surf 12","surb doce"
   [/\b(surv\s?12|serve\s?12|surf\s?12|serve\s?doce|sub\s?12|sur\s?12|surb\s?doce|surv\s?doce)\b/i,'Surv12'],
-  // CAR medkit: C-A-R → "car med","kar med"
-  [/\b(car\s?med|car\s?met|car\s?medkit|kar\s?med)\b/i,'CAR Med Kit'],
-  // AI-2: A-I-2 → "a i dos","a eye dos"
-  [/\b(ai[\s-]?2|a\.i\.2|a\s?i\s?dos|ai\s?two|eye\s?two|a\s?y\s?dos|ey\s?dos)\b/i,'AI-2'],
-  // Morphine: MOR-FINE → "morfina"
+
+  // CAR medkit — ES: "botiquín car"  Vosk: "car med","kar med"
+  [/\b(car\s?med(kit)?|kar\s?med|botiquín\s?car|car\s?met)\b/i,'CAR Med Kit'],
+
+  // AI-2 medkit — ES: "ai-2","botiquín ai 2"  Vosk: "a i dos"
+  [/\b(ai[\s-]?2|a\.i\.2|a\s?i\s?dos|ai\s?two|eye\s?two|a\s?y\s?dos|ey\s?dos|botiquín\s?a\s?i)\b/i,'AI-2'],
+
+  // Morphine — ES: "morfina"
   [/\b(morfina|morfin|morphin|morphine|mor\s?fina)\b/i,'Morphine'],
-  // Propital: PRO-PI-TAL → "propietal","propitol"
+
+  // Propital — Vosk: "propietal","propitol"
   [/\b(propital|propi\s?tal|propietal|propitol|pro\s?pital)\b/i,'Propital'],
-  // Trimadol: TRI-MA-DOL → "tramadol","tri madol"
+
+  // Trimadol — Vosk: "tramadol"
   [/\b(trimadol|tramadol|tri\s?madol|trima\s?dol)\b/i,'Trimadol'],
-  // Augmentin: AUG-MEN-TIN → "agmentin","augmento"
+
+  // Augmentin — Vosk: "agmentin"
   [/\b(augmentin|agmentin|augmento|aug\s?mentin)\b/i,'Augmentin'],
-  // Zithromax: ZI-THRO-MAX → "zitromax","xitromax" (TH→t)
+
+  // Zithromax — Vosk: "zitromax","sitromax"
   [/\b(zithromax|zitromax|xitromax|zitromac|zi\s?tro\s?max|si\s?tro\s?max)\b/i,'Zithromax'],
-  // Ibuprofen: I-BU-PRO-FEN → "ibuprofeno"
-  [/\b(ibuprofen|ibuprofeno|ibu\s?profen|ibu\s?pro\s?fen)\b/i,'Ibuprofen'],
-  // Analgin: AN-AL-GIN → "analyin","analgyn"
-  [/\b(analgin|analyin|analgyn|anal\s?gin|ana\s?gin)\b/i,'Analgin'],
-  // Hemostatic: HE-MO-STA-TIC → "hemostat","emostat"
-  [/\b(hemostat(ic)?|hemo\s?stat|hemostasis|emo\s?stat)\b/i,'Hemostatic'],
-  // Golden Star balm: → "pomada","golden stár"
-  [/\b(golden\s?star|goldstar|golden\s?stár|pomada|estrella\s?dorada|golden\s?start)\b/i,'Golden Star balm'],
-  // Vaseline: VA-SE-LINE → "vaselina","vazeline" (V=B)
+
+  // Ibuprofen — ES: "ibuprofeno"
+  [/\b(ibuprofen|ibuprofeno|ibu\s?profen)\b/i,'Ibuprofen'],
+
+  // Analgin — Vosk: "analyin"
+  [/\b(analgin|analyin|analgyn|anal\s?gin)\b/i,'Analgin'],
+
+  // Hemostatic — ES: "hemostático"  Vosk: "hemostat","emostat"
+  [/\b(hemostat(ic)?|hemo\s?stat|hemostasis|emo\s?stat|hemostático)\b/i,'Hemostatic'],
+
+  // Golden Star balm — ES: "pomada estrella dorada","bálsamo estrella dorada"
+  [/\b(golden\s?star|goldstar|pomada\s?(estrella|dorada)|bálsamo\s?estrella|estrella\s?dorada)\b/i,'Golden Star balm'],
+
+  // Vaseline — ES: "vaselina"
   [/\b(vaseline|vaselina|vazeline|vase\s?lina|baze\s?lina)\b/i,'Vaseline'],
-  // Esmarch tourniquet: ES-MARCH → "esmark","torni quet"
-  [/\b(esmarch|esmark|tourniquet|torni\s?quet|torni\s?que|es\s?march|torniquete)\b/i,"Esmarch's tourniquet"],
-  // CAT tourniquet: C-A-T → "kat","ce a te"
-  [/\b(\bcat\b|c\.a\.t|combat\s?tourniquet|kat|torniquete\s?cat)\b/i,'CAT'],
-  // Calok-B: CA-LOK-B → "caloc b","ka lok"
+
+  // Esmarch tourniquet — ES: "torniquete esmarch"  Vosk: "esmark"
+  [/\b(esmarch|esmark|tourniquet|torni\s?quet|torniquete\s?esmarch|torniquete)\b/i,"Esmarch's tourniquet"],
+
+  // CAT tourniquet — ES: "torniquete cat"  Vosk: "kat","ce a te"
+  [/\b(\bcat\b|c\.a\.t|torniquete\s?cat|combat\s?tourniquet|kat)\b/i,'CAT'],
+
+  // Calok-B — ES: "calok"
   [/\b(calok|caloc|cal\s?ok|kalo\s?k|calok\s?b)\b/i,'Calok-B hemostatic'],
-  // Obdolbos: OB-DOL-BOS → "obdolbols","obdolboss","ob dol bos"
-  [/\b(obdolbos|obdolbols|obdolboss|ob\s?dol\s?bos|obdol\s?bos)\b/i,'Obdolbos'],
-  // Meldonin: MEL-DO-NIN → "meldonyn","mel donin"
+
+  // Obdolbos — Vosk: "obdolbols","ob dol bos"
+  [/\b(obdolbos|obdolbols|obdolboss|ob\s?dol\s?bos)\b/i,'Obdolbos'],
+
+  // Meldonin — Vosk: "meldonyn"
   [/\b(meldonin|meldonyn|meldony|mel\s?donin)\b/i,'Meldonin'],
-  // Ketamine: KE-TA-MINE → "ketamina"
+
+  // Ketamine — ES: "ketamina"
   [/\b(ketamine|ketamina|ketamin|keta\s?mina)\b/i,'Ketamine'],
-  // Adrenaline: A-DRE-NA-LINE → "adrenalina"
-  [/\b(adrenaline|adrenalina|epinephrine|adre\s?nalina)\b/i,'Adrenaline'],
-  // Perfotoran: PER-FO-TO-RAN → "perfotorán","perfo toran"
+
+  // Adrenaline — ES: "adrenalina","epinefrina"
+  [/\b(adrenaline|adrenalina|epinephrine|epinefrina|adre\s?nalina)\b/i,'Adrenaline'],
+
+  // Perfotoran — ES: "perfotoran" (no ES name)  Vosk: "perfo toran"
   [/\b(perfotoran|perfotorán|perfo\s?toran|perfo\s?ran)\b/i,'Perfotoran'],
-  // SJ1 TGS: S-J-1 → "ese jota uno","sj one"
-  [/\b(sj[\s-]?1|s\.j\.1|ese\s?jota\s?uno|sj\s?one)\b/i,'SJ1 TGS'],
-  // SJ6 TGS: S-J-6 → "ese jota seis"
-  [/\b(sj[\s-]?6|s\.j\.6|ese\s?jota\s?seis|sj\s?six)\b/i,'SJ6 TGS'],
-  // Aseptic bandage: A-SEP-TIC → "aséptico"
-  [/\b(aseptic|aséptico|antiseptic|venda\s?aséptica)\b/i,'Aseptic bandage'],
-  // Army bandage: ARMY-BAND-AGE → "army venda"
-  [/\b(army\s?bandage|army\s?venda|army\s?band|venda\s?militar)\b/i,'Army bandage'],
-  // Medical Bloodset: BLOOD-SET → "blood set","kit sangre"
-  [/\b(bloodset|blood\s?set|blood\s?kit|kit\s?sangre|medical\s?blood)\b/i,'Medical Bloodset'],
-  // Saline solution: SAY-LINE → "salina","suero salino"
+
+  // SJ1 / SJ6 TGS — ES: "inyector sj1/sj6"
+  [/\b(sj[\s-]?1|s\.j\.1|ese\s?jota\s?uno|inyector\s?sj\s?1)\b/i,'SJ1 TGS'],
+  [/\b(sj[\s-]?6|s\.j\.6|ese\s?jota\s?seis|inyector\s?sj\s?6)\b/i,'SJ6 TGS'],
+
+  // Aseptic bandage — ES: "venda aséptica","vendaje aséptico"
+  [/\b(aseptic|aséptico|antiseptic|venda\s?aséptica|vendaje\s?aséptico|venda\s?esteril)\b/i,'Aseptic bandage'],
+
+  // Army bandage — ES: "venda militar","vendaje del ejército"
+  [/\b(army\s?bandage|army\s?venda|venda\s?militar|vendaje\s?del\s?ejército|venda\s?army)\b/i,'Army bandage'],
+
+  // Medical Bloodset — ES: "kit de sangre","transfusión"
+  [/\b(bloodset|blood\s?set|kit\s?de\s?sangre|transfusión|blood\s?kit|medical\s?blood)\b/i,'Medical Bloodset'],
+
+  // Saline solution — ES: "solución salina","suero salino"
   [/\b(saline|salina\s?solution|solución\s?salina|suero\s?salino)\b/i,'Saline solution'],
-  // Splint: SPLINT → "tablilla","esplint","esplin"
-  [/\b(\bsplint\b|tablilla|esplint|esplin|cabestrillo)\b/i,'Splint'],
-  // CMS kit: C-M-S → "se eme ese","cms kit"
-  [/\b(\bcms\b|c\.m\.s|se\s?eme\s?ese|cms\s?kit)\b/i,'CMS kit'],
-  // Recxline: RECK-LINE → "rec line","reklin"
+
+  // Splint — ES: "tablilla","entablillado"
+  [/\b(\bsplint\b|tablilla|esplint|esplin|entablillado|cabestrillo)\b/i,'Splint'],
+
+  // CMS kit — ES: "kit cms","kit de campo"
+  [/\b(\bcms\b|c\.m\.s|se\s?eme\s?ese|cms\s?kit|kit\s?cms)\b/i,'CMS kit'],
+
+  // Recxline — Vosk: "rec line","reklin"
   [/\b(recxline|rec\s?line|reklin|recks\s?line)\b/i,'Recxline'],
 
-  // ━━━ ELECTRONICS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Military circuit board: → "circuito militar","mcb"
-  [/\b(military\s?circuit|military\s?board|circuito\s?militar|mcb|m\s?c\s?b)\b/i,'Military circuit board'],
-  // Printed circuit board: PCB → "pe se be","circuito impreso"
-  [/\b(circuit\s?board|printed\s?circuit|pcb|circuito\s?impreso|pe\s?se\s?be)\b/i,'Printed circuit board'],
-  // Nixxor: NIX-OR → "nixor","nicxor","nix or"
-  [/\b(nixxor|nixor|nicxor|nix\s?or|nik\s?sor)\b/i,'Nixxor'],
-  // Plexiglass: PLEX-I-GLASS → "plexiglas","plexi"
-  [/\b(plexiglass|plexiglas|plexigl|plexi|plex\s?i\s?glass)\b/i,'Plexiglass'],
-  // Wi-Fi camera: WI-FI → "camara wifi","wi fi cam"
-  [/\b(wifi\s?camera|wi\s?fi\s?camera|camara\s?wifi|cámara\s?wifi|wireless\s?camera)\b/i,'Wi-Fi camera'],
-  // Spark plug: SPARK-PLUG → "bujía","bujia"
-  [/\b(spark\s?plug|sparkplug|bujía|bujia|bougía|chispa)\b/i,'Spark plug'],
-  // Military power filter: → "filtro militar"
-  [/\b(military\s?power\s?filter|military\s?power|filtro\s?militar|power\s?filter)\b/i,'Military power filter'],
-  // Military cable: → "cable militar"
+  // ━━━ ELECTRONICS / BARTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Military circuit board — ES: "placa de circuito militar","circuito militar"
+  [/\b(military\s?circuit|military\s?board|placa\s?de\s?circuito\s?militar|circuito\s?militar|mcb)\b/i,'Military circuit board'],
+
+  // Printed circuit board — ES: "placa de circuito impreso","PCB"
+  [/\b(circuit\s?board|printed\s?circuit|pcb|placa\s?de\s?circuito\s?impreso|circuito\s?impreso|pe\s?se\s?be)\b/i,'Printed circuit board'],
+
+  // Nixxor — ES: "lente nixxor"  Vosk: "nixor","nicxor"
+  [/\b(nixxor|nixor|nicxor|nix\s?or|lente\s?nixxor)\b/i,'Nixxor'],
+
+  // Plexiglass — ES: "plexiglás","plexiglass"
+  [/\b(plexiglass|plexiglas|plexigl|plexi|plex\s?i\s?glass|plexiglás)\b/i,'Plexiglass'],
+
+  // Wi-Fi camera — ES: "cámara wifi","cámara inalámbrica"
+  [/\b(wifi\s?camera|wi\s?fi\s?camera|c[aá]mara\s?wifi|c[aá]mara\s?inalámbrica|wireless\s?camera)\b/i,'Wi-Fi camera'],
+
+  // Spark plug — ES: "bujía","chispa"  Vosk: "bujia","bougía"
+  [/\b(spark\s?plug|sparkplug|bujía|bujia|bougía|chispa|bu\s?jia)\b/i,'Spark plug'],
+
+  // Military power filter — ES: "filtro de energía militar"
+  [/\b(military\s?power\s?filter|military\s?power|filtro\s?de\s?energ[ií]a\s?militar|filtro\s?militar|power\s?filter)\b/i,'Military power filter'],
+
+  // Military cable — ES: "cable militar"
   [/\b(military\s?cable|cable\s?militar)\b/i,'Military cable'],
-  // Military gyrotachometer: GY-RO → "girotacómetro"
-  [/\b(gyrotachometer|girotacómetro|gyro\s?taco|giro\s?tacómetro)\b/i,'Military gyrotachometer'],
-  // Military thermal vision: THER-MAL → "visión térmica","iridio"
-  [/\b(iridium|iridio|thermal\s?vision\s?iridium|military\s?thermal)\b/i,'Military thermal vision module Iridium'],
-  // CPU fan: → "fan cpu","ventilador cpu"
-  [/\b(cpu\s?fan|fan\s?cpu|ventilador\s?cpu|cooler\s?cpu)\b/i,'CPU fan'],
-  // Capacitors: CA-PA-CI-TOR → "capacitores","condensadores"
-  [/\b(capacitors|capacitor|capacitores|condensadores)\b/i,'Capacitors'],
-  // Microcontroller: → "microcontrolador","micro controller"
-  [/\b(microcontroller|microcontrolador|micro\s?controller)\b/i,'Microcontroller board'],
-  // Electronic components: → "componentes electronicos"
-  [/\b(electronic\s?components|componentes\s?electrónicos|componentes\s?electronicos)\b/i,'Electronic components'],
-  // Energy-saving lamp: → "lámpara ahorro"
-  [/\b(energy\s?saving\s?lamp|lámpara\s?ahorro|bombilla\s?ahorro|energy\s?lamp)\b/i,'Energy-saving lamp'],
-  // Gas analyzer: → "analizador gas"
-  [/\b(gas\s?analyzer|gas\s?analyser|analizador\s?de\s?gas|gas\s?analizer)\b/i,'Gas analyzer'],
-  // Geiger counter: GY-GER → "contador geiger","geiger muller"
-  [/\b(geiger|geiger\s?counter|contador\s?geiger|contador\s?radiación|geiger\s?muller)\b/i,'Geiger-Muller counter'],
-  // Bundle of wires: → "cables","mazo cables"
-  [/\b(bundle\s?of\s?wires|bundle\s?wires|mazo\s?cables|cables\s?bundle|\bwires\b)\b/i,'Bundle of wires'],
-  // Magnet: MAG-NET → "imán","iman"
-  [/\b(\bmagnet\b|imán|iman|mag\s?net)\b/i,'Magnet'],
-  // Duct tape: → "cinta ducto","duck tape"
-  [/\b(duct\s?tape|duck\s?tape|cinta\s?ducto|cinta\s?duct)\b/i,'Duct tape'],
-  // Mule tape: → "cinta mula"
-  [/\b(mule\s?tape|mule\s?tap|cinta\s?mula)\b/i,'Mule tape'],
-  // Insulating tape: → "cinta aislante"
-  [/\b(insulating\s?tape|cinta\s?aislante|cinta\s?isolante|aislante\s?tape)\b/i,'Insulating tape'],
-  // Paracord: PARA-CORD → "para cord","paracaídas"
-  [/\b(paracord|para\s?cord|cuerda\s?paracaidas)\b/i,'Paracord'],
-  // Toolset: TOOL-SET → "set herramientas","caja herramientas"
-  [/\b(toolset|tool\s?set|set\s?herramientas|caja\s?herramientas|kit\s?herramientas)\b/i,'Toolset'],
-  // Soldering iron: SOL-DER-ING → "soldador" (SH→s→"soldadory"?)
-  [/\b(soldering\s?iron|soldering|soldador|soldadora)\b/i,'Soldering iron'],
-  // Screwdriver: SCREW-DRI-VER → "destornillador"
+
+  // Military gyrotachometer — ES: "girotacómetro militar"
+  [/\b(gyrotachometer|girotacómetro|giro\s?tacómetro|military\s?gyro|girotaco)\b/i,'Military gyrotachometer'],
+
+  // Military thermal vision — ES: "visión térmica iridio"
+  [/\b(iridium|iridio|thermal\s?vision\s?iridium|military\s?thermal|visión\s?térmica\s?iridio)\b/i,'Military thermal vision module Iridium'],
+
+  // CPU fan — ES: "disipador de CPU","ventilador de CPU" — already above, this catches phonetic
+  [/\b(cpu\s?fan|fan\s?cpu|ventilador\s?cpu|disipador\s?cpu)\b/i,'CPU fan'],
+
+  // Capacitors — ES: "condensadores","capacitores"
+  [/\b(capacitors|capacitor|condensadores|condensador|capacitores|capacitore)\b/i,'Capacitors'],
+
+  // Microcontroller — ES: "microcontrolador"
+  [/\b(microcontroller|microcontrolador|micro\s?controller|micro\s?controlador)\b/i,'Microcontroller board'],
+
+  // Electronic components — ES: "componentes electrónicos"
+  [/\b(electronic\s?components|componentes\s?electrónicos|componentes\s?electronicos|comp\s?electrónicos)\b/i,'Electronic components'],
+
+  // Energy-saving lamp — ES: "lámpara de bajo consumo","bombilla ahorro"
+  [/\b(energy\s?saving\s?lamp|l[aá]mpara\s?de\s?bajo\s?consumo|l[aá]mpara\s?ahorro|bombilla\s?ahorro|energy\s?lamp)\b/i,'Energy-saving lamp'],
+
+  // Gas analyzer — ES: "analizador de gas"
+  [/\b(gas\s?analyz?er|analizador\s?de\s?gas|gas\s?analiser)\b/i,'Gas analyzer'],
+
+  // Geiger counter — ES: "contador Geiger","contador de radiación"
+  [/\b(geiger|geiger\s?counter|contador\s?geiger|contador\s?de\s?radiación|geiger\s?muller|medidor\s?de\s?radiación)\b/i,'Geiger-Muller counter'],
+
+  // Bundle of wires — ES: "paquete de cables","mazo de cables"
+  [/\b(bundle\s?of\s?wires|bundle\s?wires|paquete\s?de\s?cables|mazo\s?de\s?cables|manojo\s?cables|\bwires\b)\b/i,'Bundle of wires'],
+
+  // Magnet — ES: "imán"
+  [/\b(\bmagnet\b|im[aá]n|iman|mag\s?net)\b/i,'Magnet'],
+
+  // Duct tape — ES: "cinta aislante americana","cinta de conductos"
+  [/\b(duct\s?tape|duck\s?tape|cinta\s?ducto|cinta\s?de\s?conductos|cinta\s?americana)\b/i,'Duct tape'],
+
+  // Mule tape — ES: "cinta mula","cinta de alta resistencia"
+  [/\b(mule\s?tape|mule\s?tap|cinta\s?mula|cinta\s?de\s?alta\s?resistencia)\b/i,'Mule tape'],
+
+  // Insulating tape — ES: "cinta aislante"
+  [/\b(insulating\s?tape|cinta\s?aislante|cinta\s?isolante|cinta\s?aisladora)\b/i,'Insulating tape'],
+
+  // Paracord — ES: "paracord","cuerda de paracaídas"
+  [/\b(paracord|para\s?cord|cuerda\s?de\s?paracaídas|cuerda\s?paracaidas)\b/i,'Paracord'],
+
+  // Toolset — ES: "juego de herramientas","set de herramientas"
+  [/\b(toolset|tool\s?set|juego\s?de\s?herramientas|set\s?de\s?herramientas|kit\s?de\s?herramientas|caja\s?de\s?herramientas)\b/i,'Toolset'],
+
+  // Soldering iron — ES: "soldador","cautín"
+  [/\b(soldering\s?iron|soldering|\bsoldador\b|caut[ií]n|solda\s?dor)\b/i,'Soldering iron'],
+
+  // Screwdriver — ES: "destornillador"
   [/\b(screwdriver|destornillador|desatornillador|screw\s?driver)\b/i,'Screwdriver'],
-  // Flat screwdriver: → "plano destornillador"
-  [/\b(flat\s?screwdriver|flathead|destornillador\s?plano|flat\s?head)\b/i,'Flat screwdriver'],
-  // Wrench: WREN-CH → "llave inglesa" (W→"gu")
-  [/\b(\bwrench\b|llave\s?inglesa|llave\s?tuercas|llave\s?de\s?tuercas)\b/i,'Wrench'],
-  // Pliers: PLY-ERS → "alicates","pinzas"
-  [/\b(\bpliers\b|alicates|pinzas)\b/i,'Pliers'],
-  // Hammer: HAM-MER → "martillo"
+
+  // Flat screwdriver — ES: "destornillador plano"
+  [/\b(flat\s?screwdriver|flathead|destornillador\s?plano|plano\s?destornillador)\b/i,'Flat screwdriver'],
+
+  // Wrench — ES: "llave inglesa","llave de tuercas"
+  [/\b(\bwrench\b|llave\s?inglesa|llave\s?de\s?tuercas|llave\s?tuercas)\b/i,'Wrench'],
+
+  // Pliers — ES: "alicates","pinzas","tenazas"
+  [/\b(\bpliers\b|alicates|pinzas|tena\s?zas)\b/i,'Pliers'],
+
+  // Hammer — ES: "martillo"
   [/\b(\bhammer\b|martillo)\b/i,'Hammer'],
-  // Nippers: NIP-PERS → "tenazas","cortaalambres"
-  [/\b(\bnippers\b|tenazas|cortaalambres)\b/i,'Nippers'],
-  // WD-40: W-D-40 → "we de cuarenta","lubricante"
-  [/\b(wd[\s-]?40|we\s?de\s?cuarenta|lubricante\s?wd|w\s?d\s?40)\b/i,'WD-40 100ml'],
-  // Electric motor: → "motor eléctrico"
-  [/\b(electric\s?motor|motor\s?eléctrico|motor\s?electrico|elec\s?motor)\b/i,'Electric motor'],
-  // Electric drill: → "taladro eléctrico"
-  [/\b(electric\s?drill|taladro\s?eléctrico|taladro|drill\s?electrico)\b/i,'Electric drill'],
-  // Light bulb: → "bombilla","foco"
-  [/\b(light\s?bulb|\bbulb\b|bombilla|foco|bombillo)\b/i,'Bulb'],
-  // Power bank: → "batería externa"
-  [/\b(power\s?bank|batería\s?externa|powerbank|bateria\s?externa)\b/i,'Power bank'],
-  // PSU: P-S-U → "fuente poder","fuente de poder"
-  [/\b(\bpsu\b|fuente\s?poder|fuente\s?de\s?poder|power\s?supply)\b/i,'PSU'],
-  // Lion battery: → "batería lion"
-  [/\b(lion\s?battery|batería\s?lion|bateria\s?lion|lion\s?bat)\b/i,'Lion battery'],
-  // 6-STEN battery: → "seis sten","military battery","batería militar"
-  [/\b(6sten|seis\s?sten|military\s?battery|bateria\s?militar|6\s?sten)\b/i,'6-STEN-140-M battery'],
-  // Battery pack: → "paquete baterías"
-  [/\b(battery\s?pack|paquete\s?baterías|pack\s?baterías|baterias\s?pack)\b/i,'Battery pack'],
-  // Broken LCD: LCD-ROT → "lcd roto","pantalla rota"
-  [/\b(broken\s?lcd|lcd\s?roto|pantalla\s?rota|lcd\s?broken)\b/i,'Broken LCD'],
-  // DVD drive: D-V-D → "unidad dvd","lector dvd","dé vé dé"
-  [/\b(dvd\s?drive|unidad\s?dvd|lector\s?dvd|dé\s?vé\s?dé)\b/i,'DVD drive'],
-  // Damaged hard drive: → "disco duro dañado"
-  [/\b(damaged\s?hard\s?drive|disco\s?duro\s?dañado|damaged\s?drive)\b/i,'Damaged hard drive'],
-  // Far-forward GPS: → "gps amplifier","amplificador gps"
-  [/\b(gps\s?amplifier|amplificador\s?gps|far\s?forward\s?gps|signal\s?amplifier)\b/i,'Far-forward GPS Signal Amplifier Unit'],
-  // GARY ZONT: GAR-Y-ZONT → "gary","son","zont"
-  [/\b(gary\s?zont|gary\s?son|garri\s?son|gary|zont)\b/i,'GARY ZONT portable electronic warfare device'],
-  // KOSA UAV: KO-SA → "cosa","kosa"
-  [/\b(kosa\s?uav|kosa|cosa\s?uav|ko\s?sa)\b/i,'KOSA UAV electronic jamming device'],
-  // Broken GPhone X: → "gphone x roto"
-  [/\b(broken\s?gphone\s?x|gphone\s?x\s?roto)\b/i,'Broken GPhone X smartphone'],
+
+  // Nippers — ES: "alicates de corte","cortaúñas","cortaalambres"
+  [/\b(\bnippers\b|tenazas|cortaalambres|alicates\s?de\s?corte)\b/i,'Nippers'],
+
+  // WD-40 — ES: "lubricante wd-40","aceite wd"
+  [/\b(wd[\s-]?40|lubricante\s?wd|aceite\s?wd|we\s?de\s?cuarenta)\b/i,'WD-40 100ml'],
+
+  // Electric motor — ES: "motor eléctrico"
+  [/\b(electric\s?motor|motor\s?el[eé]ctrico|elec\s?motor)\b/i,'Electric motor'],
+
+  // Electric drill — ES: "taladro eléctrico","taladro"
+  [/\b(electric\s?drill|taladro\s?el[eé]ctrico|\btaladro\b|drill\s?electrico)\b/i,'Electric drill'],
+
+  // Bulb — ES: "bombilla","foco","ampolleta"
+  [/\b(light\s?bulb|\bbulb\b|bombilla|foco|bombillo|ampolleta)\b/i,'Bulb'],
+
+  // Power bank — ES: "batería externa","banco de energía"
+  [/\b(power\s?bank|bater[ií]a\s?externa|banco\s?de\s?energ[ií]a|powerbank)\b/i,'Power bank'],
+
+  // PSU — ES: "fuente de alimentación","fuente de poder"
+  [/\b(\bpsu\b|fuente\s?de\s?alimentaci[oó]n|fuente\s?de\s?poder|power\s?supply|fuente\s?poder)\b/i,'PSU'],
+
+  // Lion battery — ES: "batería de ion de litio","pila lion"
+  [/\b(lion\s?battery|bater[ií]a\s?lion|pila\s?lion|bater[ií]a\s?de\s?ion|bateria\s?lion)\b/i,'Lion battery'],
+
+  // 6-STEN battery — ES: "batería militar","batería 6-sten"
+  [/\b(6sten|seis\s?sten|military\s?battery|bater[ií]a\s?militar|6\s?sten|bater[ií]a\s?6)\b/i,'6-STEN-140-M battery'],
+
+  // Battery pack — ES: "paquete de baterías"
+  [/\b(battery\s?pack|paquete\s?de\s?bater[ií]as|pack\s?baterías)\b/i,'Battery pack'],
+
+  // Broken LCD — ES: "pantalla lcd rota","lcd roto"
+  [/\b(broken\s?lcd|lcd\s?roto|pantalla\s?(lcd\s?)?rota)\b/i,'Broken LCD'],
+
+  // DVD drive — ES: "unidad de DVD","lector de DVD"
+  [/\b(dvd\s?drive|unidad\s?de\s?dvd|lector\s?de\s?dvd|dé\s?vé\s?dé)\b/i,'DVD drive'],
+
+  // Far-forward GPS — ES: "amplificador de señal GPS"
+  [/\b(gps\s?amplifier|amplificador\s?de\s?señal\s?gps|far\s?forward\s?gps|signal\s?amplifier)\b/i,'Far-forward GPS Signal Amplifier Unit'],
+
+  // GARY ZONT — ES: "dispositivo de guerra electrónica"  Vosk: "gary son","garri son"
+  [/\b(gary\s?zont|gary\s?son|garri\s?son|\bgary\b|\bzont\b)\b/i,'GARY ZONT portable electronic warfare device'],
+
+  // KOSA UAV — ES: "dron kosa","dispositivo kosa"  Vosk: "cosa","kosa"
+  [/\b(kosa\s?uav|\bkosa\b|cosa\s?uav|dron\s?kosa)\b/i,'KOSA UAV electronic jamming device'],
 
   // ━━━ CONTAINERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SICC: S-I-C-C → "sik","sick case","si ce ce"
-  [/\b(sicc|sick\s?case|sic\s?case|sick\s?pouch|\bsic\b|\bsik\b|si\s?ce\s?ce)\b/i,'SICC'],
-  // Docs case: → "caja documentos","case docs"
-  [/\b(docs\s?case|document\s?case|doc\s?case|documentos|caja\s?documentos)\b/i,'Docs case'],
-  // Wallet: WAL-LET → "cartera","billetera"
-  [/\b(\bwallet\b|cartera|billetera)\b/i,'Wallet'],
-  // Keytool: KEY-TOOL → "ki tul","llavero"
-  [/\b(keytool|key\s?tool|key\s?chain|llavero|ki\s?tul|key\s?tul)\b/i,'Keytool'],
-  // Pilgrim: PIL-GRIM → "pil grim","pilgram"
-  [/\b(pilgrim|pelgrim|pilgram|pil\s?grim)\b/i,'Pilgrim'],
-  // Tri-Zip: TRI-ZIP → "trizip","tri zip"
-  [/\b(tri[\s-]?zip|trizip)\b/i,'Tri-Zip'],
-  // Magazine case: → "portacargadores"
-  [/\b(mag\s?case|magazine\s?case|portacargadores|porta\s?cargadores)\b/i,'Magazine case'],
-  // Ammo case: → "caja munición"
-  [/\b(ammo\s?case|ammo\s?box|caja\s?munición|caja\s?municion)\b/i,'Ammo case'],
-  // Med case: → "caja médica"
-  [/\b(med\s?case|medical\s?case|caja\s?médica|caja\s?medica)\b/i,'Med case'],
-  // Gun case: → "caja armas","rifle case"
-  [/\b(gun\s?case|weapon\s?case|caja\s?armas|rifle\s?case)\b/i,'Gun case'],
-  // Grenade case: → "caja granadas"
-  [/\b(grenade\s?case|grenade\s?box|caja\s?granadas)\b/i,'Grenade case'],
-  // THICC item case: THICC → "tick item","ti hic","thick"
-  [/\b(thicc|thicc\s?item|thicc\s?case|tick\s?item|t\s?h\s?i\s?c\s?c|ti\s?hic|the\s?hick|thick\s?item)\b/i,'THICC item case'],
-  // THICC weapon case:
-  [/\b(thicc\s?weapon|weapon\s?thicc|thick\s?weapon)\b/i,'THICC weapon case'],
-  // Lucky Scav: → "lucky scab","caja scav"
-  [/\b(lucky\s?scav|lucky\s?scab|caja\s?scav|scav\s?junk)\b/i,'Lucky Scav junkbox'],
-  // Secure containers:
+  // SICC — ES: "estuche sicc","bolsa sicc"  Vosk: "sik","si ce ce"
+  [/\b(sicc|sick\s?case|sic\s?case|sick\s?pouch|\bsic\b|\bsik\b|si\s?ce\s?ce|estuche\s?sicc)\b/i,'SICC'],
+
+  // Docs case — ES: "maletín de documentos","caja de documentos"
+  [/\b(docs\s?case|document\s?case|doc\s?case|malet[ií]n\s?de\s?documentos|caja\s?de\s?documentos|carpeta\s?de\s?documentos)\b/i,'Docs case'],
+
+  // Wallet — ES: "cartera","billetera","monedero"
+  [/\b(\bwallet\b|cartera|billetera|monedero)\b/i,'Wallet'],
+
+  // Keytool — ES: "llavero","organizador de llaves"
+  [/\b(keytool|key\s?tool|llavero|organizador\s?de\s?llaves|key\s?chain)\b/i,'Keytool'],
+
+  // Pilgrim — ES: "mochila pilgrim"  Vosk: "pil grim"
+  [/\b(pilgrim|pelgrim|pilgram|pil\s?grim|mochila\s?pilgrim)\b/i,'Pilgrim'],
+
+  // Tri-Zip — ES: "mochila tri-zip"
+  [/\b(tri[\s-]?zip|trizip|mochila\s?tri\s?zip)\b/i,'Tri-Zip'],
+
+  // Magazine case — ES: "portacargadores","caja de cargadores"
+  [/\b(mag\s?case|magazine\s?case|portacargadores|caja\s?de\s?cargadores|porta\s?cargadores)\b/i,'Magazine case'],
+
+  // Ammo case — ES: "caja de munición"
+  [/\b(ammo\s?case|ammo\s?box|caja\s?de\s?munición|caja\s?municion)\b/i,'Ammo case'],
+
+  // Med case — ES: "caja médica","maletín médico"
+  [/\b(med\s?case|medical\s?case|caja\s?m[eé]dica|malet[ií]n\s?m[eé]dico)\b/i,'Med case'],
+
+  // Gun case — ES: "caja de armas","estuche de rifle"
+  [/\b(gun\s?case|weapon\s?case|caja\s?de\s?armas|estuche\s?de\s?rifle|rifle\s?case)\b/i,'Gun case'],
+
+  // Grenade case — ES: "caja de granadas"
+  [/\b(grenade\s?case|grenade\s?box|caja\s?de\s?granadas)\b/i,'Grenade case'],
+
+  // THICC item case — ES: "caja de items thicc"  Vosk: "tick item","ti hic","thick"
+  [/\b(thicc|thicc\s?item|thicc\s?case|tick\s?item|ti\s?hic|the\s?hick|thick\s?item|caja\s?thicc)\b/i,'THICC item case'],
+
+  // THICC weapon case — ES: "caja de armas thicc"
+  [/\b(thicc\s?weapon|weapon\s?thicc|thick\s?weapon|caja\s?thicc\s?armas)\b/i,'THICC weapon case'],
+
+  // Lucky Scav junkbox — ES: "caja de chatarra del scav","caja scav"
+  [/\b(lucky\s?scav|lucky\s?scab|caja\s?de\s?chatarra|caja\s?scav|scav\s?junk)\b/i,'Lucky Scav junkbox'],
+
+  // Secure containers — ES names
   [/\b(\bkappa\b|kapa|contenedor\s?kappa|capa\s?contenedor)\b/i,'Secure container Kappa'],
-  [/\b(\bgamma\b|gama|contenedor\s?gamma)\b/i,'Secure container Gamma'],
-  [/\b(\bepsilon\b|epsilón|contenedor\s?epsilon)\b/i,'Secure container Epsilon'],
-  [/\b(\bbeta\b|\bbeta\s?case\b|contenedor\s?beta)\b/i,'Secure container Beta'],
-  [/\b(\btheta\b|contenedor\s?theta)\b/i,'Secure container Theta'],
+  [/\b(\bgamma\b|\bgama\b|contenedor\s?gamma)\b/i,'Secure container Gamma'],
+  [/\b(\bepsilon\b|eps[ií]lon|contenedor\s?epsilon)\b/i,'Secure container Epsilon'],
+  [/\b(contenedor\s?beta|beta\s?case)\b/i,'Secure container Beta'],
+  [/\b(\btheta\b|contenedor\s?theta|te\s?ta)\b/i,'Secure container Theta'],
 
   // ━━━ PROVISIONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Aquamari: A-QUA-MA-RI → "aquamarine","agua mari"
-  [/\b(aquamari|aquamarine|agua\s?mari|aqua\s?mary|aquamary)\b/i,'Aquamari'],
-  // Emelya: E-MEL-YA → "emelia","emelía","emely"
-  [/\b(emelya|emelia|emelía|eme\s?lia|eme\s?lya|emely)\b/i,'Emelya'],
-  // Tushonka: TU-SHON-KA → SH→Y in ES → "tuyon","puyon","tu son","tu shon","tu jon"
-  [/\b(tushonka|tushon\s?ka|tu\s?shonka|tushanka|tush\s?onka|tuyon|tu\s?yon|puyon|tu\s?son|tu\s?shon|tu\s?jon|leche\s?condensada|condensed\s?milk)\b/i,'Tushonka'],
-  // Can of coffee: → "café","lata café"
-  [/\b(can\s?of\s?coffee|café\s?enlatado|lata\s?café|coffe\s?can|koffee)\b/i,'Can of coffee'],
-  // Can of herring: → "arenque","lata arenque"
-  [/\b(\bherring\b|arenque|herrings|lata\s?arenque|can\s?of\s?herring)\b/i,'Can of herring'],
-  // Crackers: CRACK-ERS → "galletas","krakers"
-  [/\b(\bcrackers\b|galletas|cracker|krakers)\b/i,'Crackers'],
-  // Sugar: → "azúcar"
-  [/\b(\bsugar\b|azúcar|azucar|sugar\s?pack)\b/i,'Sugar'],
-  // Mayonnaise: MAY-ON-NAISE → "mayonesa"
+  // Aquamari — ES: "aquamari agua mineral"  Vosk: "agua mari"
+  [/\b(aquamari|aquamarine|agua\s?mari|aqua\s?mary|aquamary|agua\s?mineral\s?aquamari)\b/i,'Aquamari'],
+
+  // Emelya crackers — ES: "galletas emelya"  Vosk: "emelia"
+  [/\b(emelya|emelia|emelía|eme\s?lia|eme\s?lya|galletas\s?emelya)\b/i,'Emelya'],
+
+  // Tushonka — ES: "leche condensada" is wrong! Tushonka = canned meat (carne en conserva)
+  // Vosk variants: "tuyon","puyon","tu son","tu shon","tu jon","tuyo nunca"
+  [/\b(tushonka|tushon\s?ka|tu\s?shonka|tushanka|tuyon|tu\s?yon|puyon|tu\s?son\s?ka|tu\s?son\s?ca|tu\s?son|tu\s?shon|tu\s?jon|tuyo\s?nunca|carne\s?en\s?conserva)\b/i,'Tushonka'],
+
+  // Can of coffee — ES: "lata de café","café enlatado"
+  [/\b(can\s?of\s?coffee|lata\s?de\s?caf[eé]|caf[eé]\s?enlatado|coffee\s?can|koffee)\b/i,'Can of coffee'],
+
+  // Can of herring — ES: "lata de arenque","arenque enlatado"
+  [/\b(\bherring\b|arenque|lata\s?de\s?arenque|arenque\s?enlatado|can\s?of\s?herring)\b/i,'Can of herring'],
+
+  // Crackers — ES: "galletas","galletas saladas"
+  [/\b(\bcrackers\b|galletas\s?saladas|\bgalletas\b|cracker|krakers)\b/i,'Crackers'],
+
+  // Sugar — ES: "azúcar","paquete de azúcar"
+  [/\b(\bsugar\b|az[uú]car|sugar\s?pack|paquete\s?de\s?az[uú]car)\b/i,'Sugar'],
+
+  // Mayonnaise — ES: "mayonesa"
   [/\b(mayonnaise|mayonesa|mayo\s?naise|mayo\s?nesa)\b/i,'Mayonnaise'],
-  // Squash: SQUASH → "calabaza bebida" (SQ = "sku")
-  [/\b(\bsquash\b|calabaza\s?bebida|squash\s?drink)\b/i,'Squash'],
-  // Tarcola: TAR-CO-LA → "tar cola","tarcola drink"
-  [/\b(tarcola|tar\s?cola|tárco\s?la)\b/i,'Tarcola'],
-  // Iskra rations: IS-KRA → "is kra","iskra"
-  [/\b(\biskra\b|iskra\s?rations|raciones\s?iskra)\b/i,'Iskra rations'],
-  // Bottle of water: → "botella agua"
-  [/\b(water\s?bottle|botella\s?agua|bottle\s?water|botella\s?de\s?agua)\b/i,'Bottle of water (0.6L)'],
-  // Fierce Hatchling moonshine: → already covered by moonshine
+
+  // Squash — ES: "bebida squash","refresco squash"
+  [/\b(\bsquash\b|bebida\s?squash|refresco\s?squash)\b/i,'Squash'],
+
+  // Tarcola — ES: "tarcola","refresco tarcola"
+  [/\b(tarcola|tar\s?cola|refresco\s?tarcola)\b/i,'Tarcola'],
+
+  // Iskra rations — ES: "raciones iskra","ración iskra"
+  [/\b(\biskra\b|iskra\s?rations|raciones?\s?iskra)\b/i,'Iskra rations'],
+
+  // Bottle of water — ES: "botella de agua"
+  [/\b(water\s?bottle|botella\s?de\s?agua|bottle\s?water)\b/i,'Bottle of water (0.6L)'],
+
+  // Condensed milk (corrected) — ES: "leche condensada" → maps to Tushonka was wrong
+  // Actually Tushonka IS canned meat. Condensed milk is separate.
+  [/\b(condensed\s?milk|leche\s?condensada)\b/i,'Condensed milk'],
 
   // ━━━ BUILDING MATERIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [/\b(\bnails\b|\bnail\b|clavos|clavo|nail\s?pack)\b/i,'Nails'],
-  [/\b(\bbolts\b|\bbolt\b|pernos|perno|tornillos|bolt\s?pack)\b/i,'Bolts'],
-  [/\b(\bnuts\b|\bnut\b|tuercas|tuerca|nut\s?pack)\b/i,'Nuts'],
-  [/\b(corrugated\s?hose|manguera\s?corrugada|manguera|hose\s?corrug)\b/i,'Corrugated hose'],
-  [/\b(metal\s?cutting\s?scissors|tijeras\s?metal|metal\s?scissors)\b/i,'Metal cutting scissors'],
-  [/\b(dry\s?fuel|combustible\s?seco|fuel\s?seco|d\s?fuel)\b/i,'Dry fuel'],
-  [/\b(metal\s?fuel\s?tank|tanque\s?combustible|fuel\s?tank|metal\s?tank)\b/i,'Metal fuel tank'],
-  [/\b(firesteel|fire\s?steel|encendedor\s?acero|old\s?firesteel|fire\s?starter)\b/i,'Old Firesteel'],
-  [/\b(silicone\s?tube|tubo\s?silicona|silicon\s?tube)\b/i,'Silicone tube'],
-  [/\b(pressure\s?gauge|manómetro|manometro|gauge\s?pressure)\b/i,'Pressure gauge'],
-  [/\b(ox\s?bleach|oksid|ox\s?blanqueador|blanqueador)\b/i,'Ox bleach'],
-  [/\b(chloride|cloruro|chloruro|clo\s?ruro)\b/i,'Chloride'],
-  [/\b(gunpowder|pólvora|polvo\s?negro|gunpow)\b/i,'Gunpowder'],
-  [/\b(wooden\s?plank|tabla\s?madera|plank|tabla)\b/i,'Wooden plank'],
-  [/\b(\bcement\b|cemento|cement\s?bag|saco\s?cemento)\b/i,'Cement'],
-  [/\b(ms2000|m\s?s\s?2000|baliza|marcador)\b/i,'MS2000 Marker'],
+  // ES names from the wiki
+  [/\b(\bnails\b|\bnail\b|clavos|clavo|nail\s?pack|paquete\s?de\s?clavos)\b/i,'Nails'],
+  [/\b(\bbolts\b|\bbolt\b|pernos|perno|tornillos|tornillo)\b/i,'Bolts'],
+  [/\b(\bnuts\b|\bnut\b|tuercas|tuerca)\b/i,'Nuts'],
+  [/\b(corrugated\s?hose|manguera\s?corrugada|manguera|tubo\s?corrugado)\b/i,'Corrugated hose'],
+  [/\b(metal\s?cutting\s?scissors|tijeras\s?de\s?metal|tijeras\s?metal)\b/i,'Metal cutting scissors'],
+  [/\b(dry\s?fuel|combustible\s?seco|pastilla\s?de\s?combustible|d\s?fuel)\b/i,'Dry fuel'],
+  [/\b(metal\s?fuel\s?tank|tanque\s?de\s?combustible|depósito\s?de\s?combustible|fuel\s?tank)\b/i,'Metal fuel tank'],
+  [/\b(firesteel|fire\s?steel|encendedor\s?de\s?acero|old\s?firesteel|eslabón)\b/i,'Old Firesteel'],
+  [/\b(silicone\s?tube|tubo\s?de\s?silicona|tubería\s?de\s?silicona)\b/i,'Silicone tube'],
+  [/\b(pressure\s?gauge|man[oó]metro|medidor\s?de\s?presión)\b/i,'Pressure gauge'],
+  [/\b(ox\s?bleach|oksid|blanqueador\s?ox|blanqueador)\b/i,'Ox bleach'],
+  [/\b(chloride|cloruro|chloruro)\b/i,'Chloride'],
+  [/\b(gunpowder|p[oó]lvora|polvo\s?negro)\b/i,'Gunpowder'],
+  [/\b(wooden\s?plank|tabla\s?de\s?madera|\btabla\b|\bplank\b)\b/i,'Wooden plank'],
+  [/\b(\bcement\b|cemento|saco\s?de\s?cemento)\b/i,'Cement'],
+  [/\b(aramid\s?fiber|fibra\s?de\s?aramida|kevlar|fibra\s?aramida)\b/i,'Aramid fiber cloth'],
+  [/\b(polyamide\s?fabric|tela\s?de\s?poliamida|fabric\s?cordura|cordura)\b/i,'Cordura fabric'],
+  [/\b(ripstop|tela\s?ripstop|tejido\s?ripstop)\b/i,'Ripstop fabric'],
+  [/\b(fleece|tela\s?polar|tejido\s?polar|forro\s?polar)\b/i,'Fleece fabric'],
+  [/\b(water\s?filter|filtro\s?de\s?agua|filtro\s?agua)\b/i,'Water filter'],
+  [/\b(air\s?filter|filtro\s?de\s?aire|filtro\s?aire)\b/i,'Air filter for gas mask'],
+  [/\b(weapon\s?parts|piezas\s?de\s?arma|repuestos\s?arma|gun\s?parts)\b/i,'Weapon parts'],
+
+  // ━━━ MISCELLANEOUS VALUABLES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Cigarettes — ES: "cigarrillos"
+  [/\b(wilston|cigarrillos\s?wilston)\b/i,'Wilston cigarettes'],
+  [/\b(marlboro|malboro|cigarrillos\s?marlboro)\b/i,'Marlboro cigarettes'],
+  [/\b(apollo\s?soyuz|cigarrillos\s?apollo|apollo)\b/i,'Apollo Soyuz cigarettes'],
+  [/\b(strike\s?cigarettes|cigarrillos\s?strike)\b/i,'Strike cigarettes'],
+  // Alcohol — ES: "pólvora"
+  [/\b(águila|polvo\s?[aá]guila|pólvora\s?águila|gunpowder\s?eagle)\b/i,'Gunpowder Eagle'],
+  // MS2000 Marker — ES: "baliza ms2000","marcador"
+  [/\b(ms2000|m\s?s\s?2000|baliza\s?ms|marcador\s?ms)\b/i,'MS2000 Marker'],
+  // Dogtag — ES: "placa de identificación","chapa militar"
+  [/\b(dogtag|dog\s?tag|placa\s?de\s?identificación|chapa\s?militar|placa\s?identificación)\b/i,'Dogtag'],
+  // Buckwheat — ES: "trigo sarraceno","alforfón"
+  [/\b(buckwheat|trigo\s?sarraceno|alforf[oó]n|sarraceno)\b/i,'Buckwheat'],
+  // Analogue thermometer — ES: "termómetro analógico"
+  [/\b(analogue\s?thermometer|termómetro\s?analógico|termómetro|thermometer)\b/i,'Analogue thermometer'],
+  // UZRGM fuze — ES: "espoleta de granada uzrgm"
+  [/\b(uzrgm|fuze|espoleta|granada\s?uzrgm|espoleta\s?de\s?granada)\b/i,'UZRGM grenade fuze'],
 
   // ━━━ ARMOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [/\b(\bpaca\b|paka|paca\s?armor)\b/i,'PACA'],
+  // All armor with Spanish names where applicable
+  [/\b(\bpaca\b|paka|paca\s?armor|chaleco\s?paca)\b/i,'PACA'],
   [/\b(6b2|seis\s?b\s?dos|6\s?b\s?2)\b/i,'6B2'],
   [/\b(6b3|seis\s?b\s?tres|6\s?b\s?3)\b/i,'6B3'],
   [/\b(6b13|seis\s?b\s?trece|6\s?b\s?13)\b/i,'6B13'],
   [/\b(6b23|seis\s?b\s?veinti|6\s?b\s?23)\b/i,'6B23'],
   [/\b(6b43|seis\s?b\s?cuarenta|6\s?b\s?43)\b/i,'6B43'],
-  [/\b(\bslick\b|slik|slick\s?armor|eslic)\b/i,'Slick'],
-  [/\b(\bzhuk\b|zhuc|zuk|chuk|zhuk\s?armor)\b/i,'Zhuk'],
+  [/\b(\bslick\b|slik|slick\s?armor|eslic|chaleco\s?slick)\b/i,'Slick'],
+  [/\b(\bzhuk\b|zhuc|\bzuk\b|chuk|chaleco\s?zhuk)\b/i,'Zhuk'],
   [/\b(korund|corund|corand)\b/i,'Korund'],
   [/\b(kirasa|kiraza|kirazza)\b/i,'Kirasa'],
   [/\b(fort\s?redut|fort\s?armor|\bredut\b)\b/i,'Fort Redut'],
   [/\b(hexgrid|hex\s?grid|ex\s?grid)\b/i,'HexGrid'],
   [/\b(thor\s?armor|\bthor\b)\b/i,'THOR'],
-  [/\b(\bosprey\b|osprei|osprey\s?armor)\b/i,'Osprey'],
-  [/\b(\bdefender\b|defensor|defender\s?armor)\b/i,'Defender'],
-  [/\b(\btrooper\b|tru\s?per|trooper\s?armor)\b/i,'Trooper'],
-  [/\b(gen\s?4|generation\s?4|generación\s?4|gen\s?cuatro)\b/i,'Gen4 armor'],
-  [/\b(\bditchkovsky\b|dichkovsky|ditchkofsky)\b/i,'Zhuk-6a'],
+  [/\b(\bosprey\b|osprei|chaleco\s?osprey)\b/i,'Osprey'],
+  [/\b(\bdefender\b|defensor|chaleco\s?defender)\b/i,'Defender'],
+  [/\b(\btrooper\b|tru\s?per|chaleco\s?trooper)\b/i,'Trooper'],
 
   // ━━━ HELMETS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Altyn: AL-TIN → "altin","altín" (Russian word)
-  [/\b(altyn|altin|altín|altyn\s?helmet)\b/i,'Altyn'],
-  // Sfera: SFERA → "esfera","sphera" (Russian: сфера=sphere)
-  [/\b(sfera|esfera|sphera|sphear)\b/i,'Sfera'],
-  // Rys-T: RIS-T → "rises t","ris t"
-  [/\b(rys[\s-]?t|rises\s?t|ris\s?t)\b/i,'Rys-T'],
-  // TC-2002: T-C-2002 → "te ce dos mil"
-  [/\b(tc[\s-]?2002|tc\s?dos\s?mil|te\s?ce\s?2002)\b/i,'TC-2002'],
-  // TC-800: T-C-800 → "te ce ochocientos"
-  [/\b(tc[\s-]?800|tc\s?ochocientos|te\s?ce\s?800)\b/i,'TC-800'],
-  // FAST MT: FAST → "fast mt","fast helmet"
-  [/\b(fast\s?mt|fast\s?helmet)\b/i,'FAST MT'],
-  // LShZ: L-SH-Z → "el sh z","elshz","l sh z"
+  [/\b(altyn|altin|altín|casco\s?altyn)\b/i,'Altyn'],
+  [/\b(sfera|esfera|sphera|sphear|casco\s?sfera)\b/i,'Sfera'],
+  [/\b(rys[\s-]?t|rises\s?t|ris\s?t|casco\s?rys)\b/i,'Rys-T'],
+  [/\b(tc[\s-]?2002|tc\s?dos\s?mil)\b/i,'TC-2002'],
+  [/\b(tc[\s-]?800|tc\s?ochocientos)\b/i,'TC-800'],
+  [/\b(fast\s?mt|fast\s?helmet|casco\s?fast)\b/i,'FAST MT'],
   [/\b(lshz|l\s?sh\s?z|el\s?sh\s?z|elshz)\b/i,'LShZ-2DTM'],
-  // Kolpak: KOL-PAK → "kolpac","kol pak"
   [/\b(kolpak|kolpac|kol\s?pak|col\s?pack)\b/i,'Kolpak-1S'],
-  // SSh-68: S-SH-68 → "ssh 68","sch 68"
-  [/\b(ssh68|ssh\s?68|sch\s?68)\b/i,'SSh-68'],
-  // ZSh: Z-SH → "ze sh","z s h"
+  [/\b(ssh68|ssh\s?68|sch\s?68|casco\s?ssh)\b/i,'SSh-68'],
   [/\b(zsh|z\.s\.h|ze\s?sh)\b/i,'ZSh-1-2M'],
-  // Maska: MAS-KA → "maska","mascara"
   [/\b(maska[\s-]?1|maska\s?one|mas\s?ka)\b/i,'Maska-1SCh'],
-  // Ops-Core: OPS-CORE → "opcore","ops core"
-  [/\b(\bops[\s-]?core\b|opcore|ops\s?core\s?fast)\b/i,'Ops-Core FAST'],
-  // Galvion Caiman: GAL-VI-ON → "galvion","galvión"
+  [/\b(\bops[\s-]?core\b|opcore|ops\s?core)\b/i,'Ops-Core FAST'],
   [/\b(galvion|galvión|gal\s?vion|caiman)\b/i,'Galvion Caiman'],
-  // 6B47: 6-B-47 → "seis b cuarenta y siete"
   [/\b(6b47|seis\s?b\s?cuarenta\s?y\s?siete|6\s?b\s?47)\b/i,'6B47'],
 
   // ━━━ WEAPONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   [/\b(ak[\s-]?74m)\b/i,'AK-74M'],
   [/\b(ak[\s-]?74)\b/i,'AK-74'],
-  [/\b(ak[\s-]?101)\b/i,'AK-101'],
-  [/\b(ak[\s-]?102)\b/i,'AK-102'],
-  [/\b(ak[\s-]?103)\b/i,'AK-103'],
-  [/\b(ak[\s-]?104)\b/i,'AK-104'],
-  [/\b(ak[\s-]?105)\b/i,'AK-105'],
-  [/\b(ak[\s-]?12)\b/i,'AK-12'],
-  [/\b(ak[\s-]?15)\b/i,'AK-15'],
-  // HK416: H-K-4-1-6 → "hache ka 416","acheca 416"
+  [/\b(ak[\s-]?101)\b/i,'AK-101'],[/\b(ak[\s-]?102)\b/i,'AK-102'],
+  [/\b(ak[\s-]?103)\b/i,'AK-103'],[/\b(ak[\s-]?104)\b/i,'AK-104'],
+  [/\b(ak[\s-]?105)\b/i,'AK-105'],[/\b(ak[\s-]?12)\b/i,'AK-12'],
   [/\b(hk[\s-]?416|hache\s?ka\s?416|acheca\s?416)\b/i,'HK 416'],
-  // M4A1: M-4-A-1 → "m cuatro a uno","eme cuatro"
   [/\b(m4\s?a1|m4\s?a\s?1|m\s?cuatro|eme\s?cuatro)\b/i,'M4A1'],
-  // SA-58: S-A-58 → "sa cincuenta y ocho"
   [/\b(sa[\s-]?58|sa\s?cincuenta)\b/i,'SA-58'],
-  // Mk-18: MK-18 → "mark 18","eme ka 18"
-  [/\b(mk[\s-]?18|mark\s?18|marco\s?18)\b/i,'Mk-18'],
-  // MDR: M-D-R → "em de erre","eme de erre","emdeer"
-  [/\b(mdr|em\s?de\s?erre|eme\s?de\s?erre|emdr|emederr|em\s?d\s?r|emdeer)\b/i,'MDR'],
-  // AUG: A-U-G → "aug","auge" (steyr AUG)
+  [/\b(mk[\s-]?18|mark\s?18|eme\s?ka\s?18)\b/i,'Mk-18'],
+  [/\b(mdr|em\s?de\s?erre|eme\s?de\s?erre|emdr|emederr|emdeer)\b/i,'MDR'],
   [/\b(\baug\b|a\.u\.g|auge|steyr\s?aug)\b/i,'AUG'],
-  // SCAR-L: SCAR-L → "escar ele"
-  [/\b(scar[\s-]?l|scar\s?light|escar\s?l|escar\s?ele)\b/i,'SCAR-L'],
-  // SCAR-H: SCAR-H → "escar ache"
-  [/\b(scar[\s-]?h|scar\s?heavy|escar\s?h|escar\s?ache)\b/i,'SCAR-H'],
-  // FAL: F-A-L → "efe a ele"
+  [/\b(scar[\s-]?l|escar\s?l|escar\s?ele)\b/i,'SCAR-L'],
+  [/\b(scar[\s-]?h|escar\s?h|escar\s?ache)\b/i,'SCAR-H'],
   [/\b(\bfal\b|f\.a\.l|efe\s?a\s?ele)\b/i,'FAL'],
-  // G36: G-36 → "ge 36","gé 36"
-  [/\b(g36|ge\s?36|gé\s?36)\b/i,'G36'],
-  // G28: G-28 → "ge 28"
-  [/\b(g28|ge\s?28|gé\s?28)\b/i,'G28'],
-  // ASh-12: A-SH-12 → "ash doce"
-  [/\b(ash[\s-]?12|ash\s?doce|a\s?s\s?h\s?12)\b/i,'ASh-12'],
-  // AS VAL: AS-VAL → "val","as val"
+  [/\b(g36|ge\s?36)\b/i,'G36'],[/\b(g28|ge\s?28)\b/i,'G28'],
+  [/\b(ash[\s-]?12|ash\s?doce)\b/i,'ASh-12'],
   [/\b(as\s?val|\bval\b|v\.a\.l\.)\b/i,'AS VAL'],
-  // VSS Vintorez: V-S-S → "vintorez","vin torez"
   [/\b(vss|v\.s\.s|vintorez|vin\s?torez)\b/i,'VSS Vintorez'],
-  // SR-25: S-R-25 → "ese erre 25"
-  [/\b(sr[\s-]?25|sr\s?veinticinco|ese\s?erre\s?25)\b/i,'SR-25'],
-  // M700: M-700 → "em setecientos"
+  [/\b(sr[\s-]?25|ese\s?erre\s?25)\b/i,'SR-25'],
   [/\b(m700|m\s?700)\b/i,'M700'],
-  // SVDS: S-V-D-S → "ese ve de ese"
   [/\b(svds|s\.v\.d\.s)\b/i,'SVDS'],
-  // SVD: S-V-D → "ese ve de"
   [/\b(\bsvd\b|s\.v\.d)\b/i,'SVD'],
-  // RPK: R-P-K → "erre pe ka"
   [/\b(\brpk\b|r\.p\.k)\b/i,'RPK'],
-  // PKM: P-K-M → "pe ka eme"
   [/\b(\bpkm\b|p\.k\.m)\b/i,'PKM'],
-  // PP-91 Bizon: BI-ZON → "bizon","bi son"
   [/\b(pp[\s-]?91|\bbizon\b|bi\s?son|bi\s?zon)\b/i,'PP-91'],
-  // PP-19: P-P-19 → "pe pe 19"
   [/\b(pp[\s-]?19)\b/i,'PP-19'],
-  // MPX: M-P-X → "eme pe equis"
-  [/\b(\bmpx\b|eme\s?pe\s?equis)\b/i,'MPX'],
-  // MP5: M-P-5 → "eme pe cinco"
-  [/\b(\bmp5\b)\b/i,'MP5'],
-  // MP7: M-P-7 → "eme pe siete"
-  [/\b(\bmp7\b)\b/i,'MP7'],
-  // UMP: U-M-P → "u eme pe"
-  [/\b(\bump\b)\b/i,'UMP'],
-  // Vector: VEC-TOR → "vextor","vector" (V=B)
+  [/\b(\bmpx\b)\b/i,'MPX'],[/\b(\bmp5\b)\b/i,'MP5'],
+  [/\b(\bmp7\b)\b/i,'MP7'],[/\b(\bump\b)\b/i,'UMP'],
   [/\b(\bvector\b|vextor)\b/i,'Vector'],
-  // Glock 17/18:
   [/\b(glock\s?17|gloc\s?17)\b/i,'Glock 17'],
   [/\b(glock\s?18|gloc\s?18)\b/i,'Glock 18'],
-  // SIG P226: S-I-G-P-226 → "sig 226","sierra 226"
   [/\b(p226|sig\s?226|sierra\s?226)\b/i,'SIG P226'],
-  // Desert Eagle: DE-SERT → "deagle","águila desierto"
   [/\b(desert\s?eagle|deagle|águila\s?desierto|aguila\s?desierto)\b/i,'Desert Eagle'],
-  // Makarov: MA-KA-ROV → "makaroff","macarov" (V→f)
   [/\b(makarov|makaroff|macarov)\b/i,'Makarov'],
-  // Mosin: MO-SIN → "mosín","mosson"
   [/\b(\bmosin\b|mosín|mosson)\b/i,'Mosin'],
-  // SKS: S-K-S → "ese ka ese"
   [/\b(\bsks\b|ese\s?ka\s?ese)\b/i,'SKS'],
-  // RSASS: R-SASS → "erre sass","r sass"
   [/\b(\brsass\b|r\.sass|erre\s?sass)\b/i,'RSASS'],
-  // Lobaev: LO-BA-EV → "lobaef","lobayev" (V→f)
   [/\b(lobaev|lobaef|lobayev)\b/i,'Lobaev'],
-  // Orsis: OR-SIS → "orsys","or sis"
   [/\b(orsis|orsys|or\s?sis)\b/i,'Orsis T-5000'],
-  // DVL-10: D-V-L-10 → "de ve ele diez"
-  [/\b(\bdvl\b|d\.v\.l|de\s?ve\s?ele)\b/i,'DVL-10'],
-  // Kord: KORD → Russian heavy MG
-  [/\b(\bkord\b|k\.o\.r\.d)\b/i,'Kord'],
-  // ACR: A-C-R → "a se erre"
-  [/\b(\bacr\b|a\.c\.r)\b/i,'ACR'],
-  // TT Pistol: T-T → "te te","tokarev"
+  [/\b(\bdvl\b|d\.v\.l)\b/i,'DVL-10'],
+  [/\b(\bkord\b)\b/i,'Kord'],
+  [/\b(\bacr\b)\b/i,'ACR'],
   [/\b(\btt\b|t\.t\.|tokarev|tula\s?tokarev)\b/i,'TT pistol'],
-  // MP-43: M-P-43 → "eme pe 43","escopeta"
-  [/\b(mp[\s-]?43|mr\s?43|escopeta\s?mp)\b/i,'MP-43'],
-  // Kedr: KE-DR → Russian SMG
-  [/\b(\bkedr\b|ke\s?dr|ked\s?r)\b/i,'Kedr'],
-  // Klin: KLIN → Russian SMG  
-  [/\b(\bklin\b|kli\s?n|\bclin\b)\b/i,'Klin'],
-  // Saiga-12: SAI-GA → "saiga","saga 12"
-  [/\b(saiga\s?12|saiga|sai\s?ga|saga\s?12)\b/i,'Saiga-12'],
-  // MP-153: → "eme pe 153"
-  [/\b(mp[\s-]?153|mp\s?153)\b/i,'MP-153'],
-  // RSh-12: R-SH-12 → "erre sh doce"
+  [/\b(mp[\s-]?43|escopeta\s?mp43)\b/i,'MP-43'],
+  [/\b(\bkedr\b|ke\s?dr)\b/i,'Kedr'],
+  [/\b(\bklin\b|kli\s?n)\b/i,'Klin'],
+  [/\b(saiga\s?12|\bsaiga\b|sai\s?ga|saga\s?12)\b/i,'Saiga-12'],
+  [/\b(mp[\s-]?153)\b/i,'MP-153'],
   [/\b(rsh[\s-]?12|r\s?sh\s?12)\b/i,'RSh-12'],
-  // UZI PRO: UZI → "uzi","u zi"
-  [/\b(uzi\s?pro|uzi|u\s?zi|uzi\s?pistol)\b/i,'UZI PRO'],
-  // MP7A2: → "eme pe siete a dos"
+  [/\b(uzi\s?pro|\buzi\b)\b/i,'UZI PRO'],
   [/\b(mp7\s?a2|mp7a2)\b/i,'MP7A2'],
-  // P90: P-90 → "pe noventa"
-  [/\b(p90|pe\s?noventa|p\s?90)\b/i,'P90'],
-  // SVU: S-V-U → "ese ve u"
+  [/\b(p90|pe\s?noventa)\b/i,'P90'],
   [/\b(\bsvu\b|s\.v\.u)\b/i,'SVU'],
-  // VPO-209: → "vpo 209"
-  [/\b(\bvpo\b|vpo[\s-]?209)\b/i,'VPO-209'],
-  // Benelli: BE-NEL-LI → "beneli","benelli shotgun"
-  [/\b(benelli|beneli|be\s?nelli)\b/i,'Benelli M3'],
-  // KS-23M: K-S-23 → "ka ese 23"
-  [/\b(ks[\s-]?23|ka\s?ese\s?23)\b/i,'KS-23M'],
-  // HK G36: already above
-  // AR-15: A-R-15 → "a erre quince"
+  [/\b(vpo[\s-]?209|\bvpo\b)\b/i,'VPO-209'],
+  [/\b(benelli|beneli)\b/i,'Benelli M3'],
+  [/\b(ks[\s-]?23)\b/i,'KS-23M'],
   [/\b(ar[\s-]?15|a\s?erre\s?quince)\b/i,'AR-15'],
-  // Remington: REM-ING-TON → "remington","reminton"
-  [/\b(remington|reminton|reming\s?ton)\b/i,'Remington'],
-  // Winchester: WIN-CHES-TER → "winchester","uinchester"
-  [/\b(winchester|uinchester|winches\s?ter)\b/i,'Winchester'],
 
   // ━━━ AMMO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Igolnik: I-GOL-NIK → "igolnick","igol nik","igor nik"
   [/\b(igolnik|igolnick|igor\s?nik|igol\s?nik)\b/i,'Igolnik'],
-  [/\b(\bm61\b)\b/i,'M61'],
-  [/\b(\bm62\b)\b/i,'M62'],
-  [/\b(m855\s?a1|m\s?855\s?a\s?1|m855a1)\b/i,'M855A1'],
+  [/\b(\bm61\b)\b/i,'M61'],[/\b(\bm62\b)\b/i,'M62'],
+  [/\b(m855\s?a1|m\s?855\s?a\s?1)\b/i,'M855A1'],
   [/\b(\bm856\b|m856\s?a1)\b/i,'M856A1'],
-  [/\b(\bm993\b)\b/i,'M993'],
-  [/\b(\bm995\b)\b/i,'M995'],
+  [/\b(\bm993\b)\b/i,'M993'],[/\b(\bm995\b)\b/i,'M995'],
   [/\b(7n40|siete\s?n\s?cuarenta)\b/i,'7N40'],
   [/\b(7n39|siete\s?n\s?39)\b/i,'7N39'],
   [/\b(7n37|siete\s?n\s?37)\b/i,'7N37'],
   [/\b(7n12|siete\s?n\s?doce)\b/i,'7N12 BP'],
-  [/\b(\bofz\b|o\.f\.z|o\s?efe\s?zeta)\b/i,'OFZ'],
+  [/\b(\bofz\b|o\.f\.z|cáscara\s?ofz)\b/i,'OFZ'],
   [/\b(flechette|flecheta|flesh\s?et)\b/i,'Flechette'],
   [/\b(ap[\s-]?20|a\s?p\s?veinte)\b/i,'AP-20 slug'],
-  [/\b(pfm[\s-]?1|p\.f\.m|pe\s?efe\s?eme)\b/i,'PFM-1'],
-  [/\b(magnum\s?buckshot|magnum\s?buck|magnum\s?perdigones)\b/i,'Magnum buckshot'],
-  [/\b(sz[\s-]?1|ése\s?zeta\s?uno)\b/i,'SZ-1'],
-  [/\b(bp\s?7n12|bp\s?siete|bp\s?ammo)\b/i,'7N12 BP'],
+  [/\b(pfm[\s-]?1|p\.f\.m)\b/i,'PFM-1'],
+  [/\b(magnum\s?buckshot|magnum\s?buck|magnum\s?perdigones|perdigones\s?magnum)\b/i,'Magnum buckshot'],
+  [/\b(sz[\s-]?1)\b/i,'SZ-1'],
 
   // ━━━ KEYS / KEYCARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ES: "llave/tarjeta roja/negra/azul..."
   [/\b(red\s?keycard|tarjeta\s?roja|llave\s?roja)\b/i,'Red keycard'],
   [/\b(black\s?keycard|tarjeta\s?negra|llave\s?negra)\b/i,'Black keycard'],
   [/\b(blue\s?keycard|tarjeta\s?azul|llave\s?azul)\b/i,'Blue keycard'],
   [/\b(green\s?keycard|tarjeta\s?verde|llave\s?verde)\b/i,'Green keycard'],
-  [/\b(violet\s?keycard|purple\s?keycard|tarjeta\s?violeta)\b/i,'Violet keycard'],
+  [/\b(violet\s?keycard|purple\s?keycard|tarjeta\s?violeta|llave\s?violeta)\b/i,'Violet keycard'],
   [/\b(yellow\s?keycard|tarjeta\s?amarilla|llave\s?amarilla)\b/i,'Yellow keycard'],
   [/\b(orange\s?keycard|tarjeta\s?naranja|llave\s?naranja)\b/i,'Orange keycard'],
   [/\b(cyan\s?keycard|tarjeta\s?cyan|llave\s?turquesa)\b/i,'Cyan keycard'],
   [/\b(magenta\s?keycard|tarjeta\s?magenta)\b/i,'Magenta keycard'],
-  [/\b(dorm\s?314|habitacion\s?314|cuarto\s?314|room\s?314)\b/i,'Dorm room 314 marked key'],
-  [/\b(dorm\s?206|habitacion\s?206|cuarto\s?206|room\s?206)\b/i,'Dorm room 206 key'],
+  [/\b(dorm\s?314|habitaci[oó]n\s?314|cuarto\s?314|room\s?314)\b/i,'Dorm room 314 marked key'],
+  [/\b(dorm\s?206|habitaci[oó]n\s?206|cuarto\s?206|room\s?206)\b/i,'Dorm room 206 key'],
   [/\b(rb[\s-]?ao|r\s?b\s?a\s?o)\b/i,'RB-AO'],
   [/\b(rb[\s-]?am|r\s?b\s?a\s?m)\b/i,'RB-AM'],
   [/\b(rb[\s-]?st|r\s?b\s?s\s?t)\b/i,'RB-ST'],
-  [/\b(rb[\s-]?bk|rb\s?bk\s?marked)\b/i,'RB-BK marked key'],
+  [/\b(rb[\s-]?bk)\b/i,'RB-BK marked key'],
   [/\b(rb[\s-]?kp|r\s?b\s?k\s?p)\b/i,'RB-KP'],
   [/\b(rb[\s-]?ot|r\s?b\s?o\s?t)\b/i,'RB-OT'],
   [/\b(rb[\s-]?mp|r\s?b\s?m\s?p)\b/i,'RB-MP'],
