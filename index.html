@@ -372,6 +372,31 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--display);min-
 .capture-btns .btn{width:auto}
 
 /* ── SCROLLBAR ── */
+
+
+
+/* ── VOSK DOWNLOAD MODAL ── */
+.vosk-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);
+  display:flex;align-items:center;justify-content:center;z-index:300;
+}
+.vosk-modal.hidden{display:none}
+.vosk-box{
+  background:var(--surface);border:1px solid var(--accent-dim);border-radius:12px;
+  padding:36px 44px;text-align:center;max-width:460px;width:92%;
+  box-shadow:0 24px 64px rgba(0,0,0,.7);
+}
+.vosk-box h2{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:10px}
+.vosk-box p{font-size:15px;color:var(--text);font-family:var(--mono);
+  margin-bottom:20px;line-height:1.6}
+.vosk-progress-wrap{background:var(--bg);border:1px solid var(--border-bright);
+  border-radius:4px;height:14px;overflow:hidden;margin-bottom:12px}
+.vosk-progress-bar{height:100%;width:0%;background:var(--accent);
+  border-radius:4px;transition:width .2s}
+.vosk-progress-text{font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:20px}
+.vosk-status-msg{font-family:var(--mono);font-size:14px;color:var(--text);
+  margin-bottom:16px;line-height:1.5;min-height:20px}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
 </style>
@@ -419,6 +444,12 @@ Haz clic en Confirmar cuando estés listo.</div>
       <select class="select" id="mic-select"><option>— Cargando... —</option></select>
       <button class="btn green" id="test-mic-btn">🎙 PROBAR MIC</button>
       <button class="btn red-btn" id="stop-test-btn" style="display:none">⏹ DETENER</button>
+      <div id="vosk-test-section" style="display:none;margin-top:8px">
+        <div class="sidebar-section-title">TEST VOSK (DIAGNÓSTICO)</div>
+        <button class="btn gold" id="vosk-test-btn" style="margin-top:0">🎤 PROBAR VOSK</button>
+        <button class="btn red-btn" id="vosk-test-stop-btn" style="display:none;margin-top:4px">⏹ DETENER</button>
+        <div id="vosk-test-status" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:6px"></div>
+      </div>
       <div class="mic-test-bar" id="mic-test-bar">
         <div class="vol-label" id="lbl-vol">NIVEL DE ENTRADA</div>
         <div class="vol-track"><div class="vol-fill" id="vol-fill"></div></div>
@@ -492,13 +523,29 @@ Haz clic en Confirmar cuando estés listo.</div>
     </div>
 
   </div><!-- /content -->
+
+
+<!-- VOSK DOWNLOAD MODAL -->
+<div class="vosk-modal hidden" id="vosk-modal">
+  <div class="vosk-box">
+    <h2>🎙 MODELO DE VOZ</h2>
+    <p id="vosk-modal-desc">Para reconocimiento offline se necesita descargar el modelo de voz (~40MB). Solo se hace una vez.</p>
+    <div class="vosk-progress-wrap" id="vosk-progress-wrap" style="display:none">
+      <div class="vosk-progress-bar" id="vosk-progress-bar"></div>
+    </div>
+    <div class="vosk-progress-text" id="vosk-progress-text"></div>
+    <div class="vosk-status-msg" id="vosk-status-msg"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn gold" id="vosk-download-btn">⬇ DESCARGAR AHORA</button>
+      <button class="btn" id="vosk-cancel-btn">✕ CERRAR</button>
+    </div>
+  </div>
+</div>
 </div><!-- /main -->
 </div><!-- /layout -->
 
 <script>
-console.log('%c[TARKOV SCOUT v2.3 — GitHub Pages]', 'color:#c8a84b;font-size:16px;font-weight:bold');
-
-console.log('%c[TARKOV SCOUT v2.1 LOADED]', 'color:#c8a84b;font-size:16px;font-weight:bold');
+console.log('%c[TARKOV SCOUT v2.1 — Desktop App]', 'color:#c8a84b;font-size:16px;font-weight:bold');
 // ── I18N ─────────────────────────────────────
 const STRINGS = {
   es: {
@@ -602,6 +649,7 @@ const state = {
     : {code:'Space',label:'SPACE',ctrl:false,alt:false,shift:false},
   selectedDeviceId: null,
   micReady: false,   // true once getUserMedia granted
+  lastQuery: '',     // last searched item — re-run when switching PVP/PVE
 };
 
 // ── STATUS ────────────────────────────────────
@@ -651,97 +699,457 @@ document.getElementById('btn-pvp').addEventListener('click',()=>{
   if(state.gameMode==='pvp') return;
   state.gameMode='pvp'; applyServerMode(); savePrefs();
   setStatus('ok',t('serverSwitchPvp'));
+  if(state.lastQuery) searchItem(state.lastQuery);
   setTimeout(()=>{ if(!state.loading) setStatus('idle',t('statusReady')); },1800);
 });
 document.getElementById('btn-pve').addEventListener('click',()=>{
   if(state.gameMode==='pve') return;
   state.gameMode='pve'; applyServerMode(); savePrefs();
   setStatus('ok',t('serverSwitchPve'));
+  if(state.lastQuery) searchItem(state.lastQuery);
   setTimeout(()=>{ if(!state.loading) setStatus('idle',t('statusReady')); },1800);
 });
 
 // ── PHONETIC CORRECTION ───────────────────────
 const PHONETIC_MAP=[
-  [/\b(saleva|saliva|saleba|salewa|salevá)\b/i,'Salewa'],
-  [/\b(grizzly|grisly|grizzley|grizzli)\b/i,'Grizzly'],
-  [/\b(afak|a fak|ifak|eye fak)\b/i,'AFAK'],
-  [/\b(surv\s?12|serve 12|surf 12)\b/i,'Surv12'],
-  [/\b(car\s?med|car met)\b/i,'CAR Med Kit'],
-  [/\b(ai\s?2|a\.i\.2)\b/i,'AI-2'],
-  [/\b(morfina|morfin|morphin)\b/i,'Morphine'],
-  [/\b(propital|propi tal)\b/i,'Propital'],
-  [/\b(trimadol|tramadol)\b/i,'Trimadol'],
-  [/\b(analgin|analyin)\b/i,'Analgin'],
-  [/\b(hemostat(ic)?|hemo stat)\b/i,'Hemostatic'],
-  [/\b(ledx|ledex|le dex|led ex|eldex|led eks|el dex|le deks)\b/i,'LEDX'],
-  [/\b(gpu|g\.p\.u|tarjeta (gráfica|grafica|de video))\b/i,'GPU'],
-  [/\b(cpu|c\.p\.u|procesador)\b/i,'CPU'],
-  [/\b(hdd|h\.d\.d|disco duro)\b/i,'HDD'],
-  [/\b(ssd|s\.s\.d)\b/i,'SSD'],
-  [/\b(tetriz|tetris|tetryz)\b/i,'Tetriz'],
-  [/\b(military circuit|military board)\b/i,'Military circuit board'],
-  [/\b(circuit board|printed circuit|pcb)\b/i,'printed circuit board'],
-  [/\b(spark plug|sparkplug)\b/i,'Spark plug'],
-  [/\b(toolset|tool set)\b/i,'Toolset'],
-  [/\b(soldering iron|soldering)\b/i,'Soldering iron'],
-  [/\b(rb\s?ao)\b/i,'RB-AO'],[/\b(rb\s?am)\b/i,'RB-AM'],
-  [/\b(rb\s?st)\b/i,'RB-ST'],[/\b(rb\s?bk)\b/i,'RB-BK'],
-  [/\b(red keycard|red card)\b/i,'Red keycard'],
-  [/\b(black keycard|black card)\b/i,'Black keycard'],
-  [/\b(blue keycard|blue card)\b/i,'Blue keycard'],
-  [/\b(green keycard|green card)\b/i,'Green keycard'],
-  [/\b(violet keycard|purple keycard)\b/i,'Violet keycard'],
-  [/\b(m61|m\s61)\b/i,'M61'],[/\b(m62|m\s62)\b/i,'M62'],
-  [/\b(m855\s?a1)\b/i,'M855A1'],[/\b(m856\s?a1)\b/i,'M856A1'],
-  [/\b(m993)\b/i,'M993'],
-  [/\b(7n40|siete n 40)\b/i,'7N40'],[/\b(7n39)\b/i,'7N39'],[/\b(7n37)\b/i,'7N37'],
-  [/\b(igolnik|igolnick|igolnic)\b/i,'Igolnik'],
-  [/\b(magnum buckshot|magnum buck)\b/i,'Magnum buckshot'],
-  [/\b(paca|paka)\b/i,'PACA'],
-  [/\b(6b2|seis b 2)\b/i,'6B2'],[/\b(6b3)\b/i,'6B3'],[/\b(6b13)\b/i,'6B13'],
-  [/\b(slick|slik)\b/i,'Slick'],
-  [/\b(zhuk|zhuc|zuk)\b/i,'Zhuk'],
-  [/\b(korund|corund)\b/i,'Korund'],
-  [/\b(hexgrid|hex grid)\b/i,'HexGrid'],
-  [/\b(kirasa|kiraza)\b/i,'Kirasa'],
-  [/\b(tc\s?2002)\b/i,'TC-2002'],
-  [/\b(rys[\s-]?t|rises t)\b/i,'Rys-T'],
-  [/\b(sfera|esfera|sphera)\b/i,'Sfera'],
-  [/\b(altyn|altin)\b/i,'Altyn'],
-  [/\b(fast\s?mt|fast helmet)\b/i,'FAST MT'],
-  [/\b(ak[\s-]?74m)\b/i,'AK-74M'],[/\b(ak[\s-]?74)\b/i,'AK-74'],
-  [/\b(hk[\s-]?416)\b/i,'HK 416'],
-  [/\b(m4\s?a1|m4 a 1)\b/i,'M4A1'],
-  [/\b(sa[\s-]?58)\b/i,'SA-58'],[/\b(mk[\s-]?18)\b/i,'Mk-18'],
-  [/\b(svd)\b/i,'SVD'],[/\b(rpk)\b/i,'RPK'],[/\b(pkm)\b/i,'PKM'],
-  [/\b(pp[\s-]?91|bizon)\b/i,'PP-91'],[/\b(pp[\s-]?19)\b/i,'PP-19'],
-  [/\b(mpx)\b/i,'MPX'],[/\b(mp5)\b/i,'MP5'],[/\b(mp7)\b/i,'MP7'],
-  [/\b(ump)\b/i,'UMP'],[/\b(vector|vextor)\b/i,'Vector'],
-  [/\b(glock\s?17)\b/i,'Glock 17'],[/\b(glock\s?18)\b/i,'Glock 18'],
-  [/\b(makarov|makaroff|macarov)\b/i,'Makarov'],
-  [/\b(mosin|mosín|mosson)\b/i,'Mosin'],[/\b(sks)\b/i,'SKS'],
-  [/\b(rsass)\b/i,'RSASS'],[/\b(lobaev|lobaef)\b/i,'Lobaev'],
-  [/\b(sicc|sick case|sic case)\b/i,'SICC'],
-  [/\b(docs case|document case|doc case)\b/i,'Docs case'],
-  [/\b(keytool|key tool)\b/i,'Keytool'],
-  [/\b(pilgrim|pelgrim|pilgram)\b/i,'Pilgrim'],
-  [/\b(tri[\s-]?zip)\b/i,'Tri-Zip'],
-  [/\b(bitcoin|bit coin|btc)\b/i,'Bitcoin'],
-  [/\b(roler|rolex|roller watch)\b/i,'Roler'],
-  [/\b(defibrillator|defibrilator|desfibrilador)\b/i,'Defibrillator'],
-  [/\b(ophthalmoscope|optalmoscope|oftalmoscopio)\b/i,'Ophthalmoscope'],
-  [/\b(moonshine|moon shine)\b/i,'Moonshine'],
-  [/\b(mag case|magazine case)\b/i,'Magazine case'],
-  [/\b(ammo case|ammo box)\b/i,'Ammo case'],
-  [/\b(med case|medical case)\b/i,'Med case'],
-  [/\b(gun case|weapon case)\b/i,'Gun case'],
-  [/\b(lucky scav)\b/i,'Lucky Scav junkbox'],
+  // ━━━ HIGH VALUE ITEMS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // LEDX — "el de equis", "le dex", "le deck", "ele de equis"
+  [/\b(le\s?d[ée]x|led\s?ex|le\s?d\s?ex|l\s?e\s?d\s?x|ledx|le\s?deck|el\s?dex|eldex|eledex|ele\s?de\s?equis|el\s?de\s?equis|le\s?de\s?ex)\b/i,'LEDX'],
+  // GPU — "jipiu", "gé pé u", "ge pe u", "yipiu"
+  [/\b(gpu|g\.p\.u|jipiu|yipiu|gé\s?pé\s?u|ge\s?pe\s?u|tarjeta\s?(gráfica|grafica|de\s?video)|graphics\s?card|graphic\s?card)\b/i,'GPU'],
+  // CPU — "se pe u", "cepeu", "sé pé u"
+  [/\b(cpu|c\.p\.u|cepeu|se\s?pe\s?u|sé\s?pé\s?u|procesador|processor)\b/i,'CPU'],
+  // SSD — "ese ese de", "doble ese de"
+  [/\b(ssd|s\.s\.d|ese\s?ese\s?de|solid\s?state|unidad\s?solida)\b/i,'SSD'],
+  // HDD — "hache de de", "aché dé dé"
+  [/\b(hdd|h\.d\.d|disco\s?duro|hard\s?drive|aché\s?dé\s?dé|hache\s?de\s?de)\b/i,'HDD'],
+  // Bitcoin — "bit con", "bitcón", "bi con"  
+  [/\b(bitcoin|bit\s?coin|bit\s?con|bitcón|bi\s?con|btc|criptomoneda|moneda\s?virtual)\b/i,'Bitcoin'],
+  // Virtex — "virtec", "bírtex", "virteks"
+  [/\b(virtex|virtec|bírtex|virteks|vir\s?tex|vér\s?tex)\b/i,'Virtex'],
+  // VPX — "ve pe equis", "bé pe equis"  
+  [/\b(vpx|v\.p\.x|ve\s?pe\s?equis|bé\s?pe\s?equis|flash\s?storage|vpx\s?flash)\b/i,'VPX Flash Storage Module'],
+  // Roler — "rolar", "ró ler", "roler watch"
+  [/\b(roler|rolex|roller|rolar|ró\s?ler|rol\s?er|reloj\s?roler|reloj\s?lujoso)\b/i,'Roler'],
+  // Defibrillator — "desfibrilador", "defibri", "des fibri"
+  [/\b(defibrillator|defibrilator|desfibrilador|defibri|des\s?fibri|desfibri|desfibrila|desfibrilatorio)\b/i,'Defibrillator'],
+  // Ophthalmoscope — "oftalmoscopio", "oftalmos", "optalmo"
+  [/\b(ophthalmoscope|optalmoscope|oftalmoscopio|oftalmos|optalmo|ofta\s?moscopio|oscope|o\s?scope)\b/i,'Ophthalmoscope'],
+  // Tetriz — "tetris", "tétrys", "te tris"
+  [/\b(tetriz|tetris|tetryz|te\s?triz|te\s?tris|tétrys|tetri)\b/i,'Tetriz'],
+  // Moonshine — "moonchine", "munchine", "luna brillo"
+  [/\b(moonshine|moon\s?shine|moonchine|munchine|moon\s?chine|luna\s?brillo|aguardiente)\b/i,'Moonshine'],
+  // Military COFDM — "cofdm", "co ef de eme"
+  [/\b(cofdm|co\s?ef\s?de|military\s?cofdm|military\s?signal|transmisor\s?militar)\b/i,'Military COFDM Wireless Signal Transmitter'],
+  // Intelligence folder — "carpeta intel", "folder intel"
+  [/\b(intelligence|intel\s?folder|carpeta\s?intel|folder\s?intel|carpeta\s?inteligencia|informe\s?intel)\b/i,'Intelligence folder'],
+  // Horse figurine — "figura caballo", "figurita caballo", "horse figure"  
+  [/\b(horse\s?figurine|horse\s?figure|figurita\s?caballo|figura\s?caballo|caballo\s?figura|statuette\s?horse)\b/i,'Horse figurine'],
+  // Cat figurine — "figura gato", "gato figura"
+  [/\b(cat\s?figurine|cat\s?figure|figurita\s?gato|figura\s?gato|gato\s?figura)\b/i,'Cat figurine'],
+  // Lion figurine — "figura leon", "figurita leon"
+  [/\b(lion\s?figurine|lion\s?figure|figurita\s?leon|figura\s?leon|leon\s?figura)\b/i,'Lion figurine'],
+  // Bronze lion — "bronce leon"
+  [/\b(bronze\s?lion|bronce\s?leon|leon\s?bronce|bronce\s?leo)\b/i,'Bronze lion'],
+  // Raven figurine — "figura cuervo"
+  [/\b(raven\s?figurine|raven\s?figure|figura\s?cuervo|cuervo\s?figura)\b/i,'Raven figurine'],
+  // Antique axe — "hacha antigua"
+  [/\b(antique\s?axe|antique\s?hatchet|hacha\s?antigua|hacha\s?antígua|hachazo\s?antiguo)\b/i,'Antique axe'],
+  // Chainlet — "cadena pulsera", "chain let"
+  [/\b(chainlet|chain\s?let|cadena\s?pulsera|pulsera\s?cadena|chain\s?bracelet)\b/i,'Chainlet'],
+  // Gold chain — "cadena oro", "collar oro"
+  [/\b(gold\s?chain|cadena\s?oro|collar\s?oro|gold\s?necklace|cadena\s?dorada)\b/i,'Gold chain'],
+  // Silver ring — "anillo plata", "aro plata"
+  [/\b(silver\s?ring|anillo\s?plata|aro\s?plata|silver\s?bracelet|anillo\s?plateado)\b/i,'Silver ring'],
+  // GP Coin — "moneda gp", "je pe moneda"
+  [/\b(gp\s?coin|moneda\s?gp|gp\s?moneda|gold\s?piece|coin\s?gp|je\s?pe\s?coin)\b/i,'GP coin'],
+
+  // ━━━ MEDICAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Salewa — "sale agua", "sale legua", "san legua", "sale gua", "sale wa"
+  [/\b(sale\s?agua|sale\s?gua|sale\s?legua|san\s?legua|sale\s?wa|zalea|zale\s?wa|salewa|saleva|saliba|saleba|saliva|salevá|sale\s?ba|sale\s?va)\b/i,'Salewa'],
+  // Grizzly — "gris li", "grisley"
+  [/\b(grizzly|grisly|grizzley|grizzli|grisley|grisli|gris\s?li|gri\s?zli)\b/i,'Grizzly'],
+  // AFAK — "efak", "a ef a ka"
+  [/\b(afak|a\s?fak|ifak|eye\s?fak|a\s?f\s?a\s?k|efak|a\s?ef\s?a\s?ka)\b/i,'AFAK'],
+  // IFAK — "ifak", "i ef a ka"
+  [/\b(ifak|i\s?fak|i\s?f\s?a\s?k|i\s?ef\s?a\s?ka)\b/i,'IFAK'],
+  // Surv12 — "serve 12", "surf 12", "sub 12", "surb doce"
+  [/\b(surv\s?12|serve\s?12|surf\s?12|serve\s?doce|sub\s?12|sur\s?12|surb\s?doce|surv\s?doce)\b/i,'Surv12'],
+  // CAR medkit — "car med", "kar med"
+  [/\b(car\s?med|car\s?met|car\s?medkit|kar\s?med|c\s?a\s?r\s?med)\b/i,'CAR Med Kit'],
+  // AI-2 — "a i dos", "a eye dos", "ai two"
+  [/\b(ai[\s-]?2|a\.i\.2|a\s?i\s?dos|ai\s?two|eye\s?two|a\s?y\s?dos|a\s?i\s?2)\b/i,'AI-2'],
+  // Morphine — "morfina", "morfin"
+  [/\b(morfina|morfin|morphin|morphine|mor\s?fina|morfi\s?na)\b/i,'Morphine'],
+  // Propital — "propietal", "propitol", "pro pital"
+  [/\b(propital|propi\s?tal|propietal|propitol|pro\s?pital|propi\s?ta)\b/i,'Propital'],
+  // Trimadol — "tramadol", "tri madol"
+  [/\b(trimadol|tramadol|tri\s?madol|trima\s?dol|trim\s?adol)\b/i,'Trimadol'],
+  // Augmentin — "agmentin", "augmento"
+  [/\b(augmentin|agmentin|augmento|aug\s?mentin|agmen\s?tin)\b/i,'Augmentin'],
+  // Zithromax — "zitromax", "xitromax", "zitromac"
+  [/\b(zithromax|zitromax|xitromax|zitromac|zi\s?tro\s?max|si\s?tro\s?max)\b/i,'Zithromax'],
+  // Ibuprofen — "ibuprofeno"
+  [/\b(ibuprofen|ibuprofeno|ibu\s?profen|ibu\s?pro\s?fen)\b/i,'Ibuprofen'],
+  // Analgin — "analyin", "analgyn"
+  [/\b(analgin|analyin|analgyn|anal\s?gin|ana\s?gin)\b/i,'Analgin'],
+  // Hemostatic — "hemostat", "emostat"
+  [/\b(hemostat(ic)?|hemo\s?stat|hemostasis|emo\s?stat|hemo\s?stasis)\b/i,'Hemostatic'],
+  // Golden Star — "pomada", "golden stár"
+  [/\b(golden\s?star|goldstar|golden\s?stár|pomada|gol\s?den\s?star|estrella\s?dorada)\b/i,'Golden Star balm'],
+  // Vaseline — "vaselina", "vazeline"
+  [/\b(vaseline|vaselina|vazeline|vase\s?lina|vasi\s?lina)\b/i,'Vaseline'],
+  // Esmarch tourniquet — "esmark", "torni quet"
+  [/\b(esmarch|esmark|tourniquet|torni\s?quet|torni\s?que|es\s?march|esmar)\b/i,"Esmarch's tourniquet"],
+  // CAT tourniquet — "kat", "c a t"
+  [/\b(\bcat\b|c\.a\.t|combate\s?tourniquet|combat\s?tourniquet|kat|torniquete\s?cat)\b/i,'CAT'],
+  // Calok-B — "caloc b", "ka lok"
+  [/\b(calok|caloc|cal\s?ok|kalo\s?k|ca\s?loc|calok\s?b)\b/i,'Calok-B hemostatic'],
+  // Obdolbos — "obdolbols", "obdolboss", "ob dol bos"
+  [/\b(obdolbos|obdolbols|obdolboss|ob\s?dol\s?bos|obdol\s?bos)\b/i,'Obdolbos'],
+  // Meldonin — "meldonyn", "mel donin"
+  [/\b(meldonin|meldonyn|meldony|mel\s?donin|mel\s?donyn)\b/i,'Meldonin'],
+  // Ketamine — "ketamina", "keta mina"
+  [/\b(ketamine|ketamina|ketamin|keta\s?mina|keta\s?mine)\b/i,'Ketamine'],
+  // Adrenaline — "adrenalina"
+  [/\b(adrenaline|adrenalina|epinephrine|adre\s?nalina|adre\s?naline)\b/i,'Adrenaline'],
+  // Perfotoran — "perfotorán", "perfo toran"
+  [/\b(perfotoran|perfotorán|perfo\s?toran|perfo\s?ran|per\s?fotoran)\b/i,'Perfotoran'],
+  // SJ1 TGS — "ese jota uno", "sj one"
+  [/\b(sj[\s-]?1|s\.j\.1|ese\s?jota\s?uno|sj\s?one|ese\s?jota\s?1)\b/i,'SJ1 TGS'],
+  // SJ6 TGS — "ese jota seis", "sj six"
+  [/\b(sj[\s-]?6|s\.j\.6|ese\s?jota\s?seis|sj\s?six|ese\s?jota\s?6)\b/i,'SJ6 TGS'],
+  // Aseptic bandage — "aséptico", "antiseptic"  
+  [/\b(aseptic|aséptico|antiseptic|venda\s?aséptica|asep\s?tic)\b/i,'Aseptic bandage'],
+  // Army bandage — "army venda", "army band"
+  [/\b(army\s?bandage|army\s?venda|army\s?band|venda\s?militar|venda\s?army)\b/i,'Army bandage'],
+  // Medical bloodset — "blood set", "blood kit", "kit sangre"
+  [/\b(bloodset|blood\s?set|blood\s?kit|kit\s?sangre|medical\s?blood|transfusion\s?kit)\b/i,'Medical Bloodset'],
+  // Saline solution — "solución salina", "suero salino"
+  [/\b(saline|salina\s?solution|solución\s?salina|suero\s?salino|saline\s?solution)\b/i,'Saline solution'],
+  // Splint — "tablilla", "esplint"
+  [/\b(\bsplint\b|tablilla|esplint|splin|cabestrillo)\b/i,'Splint'],
+  // CMS kit — "c m s", "se eme ese", "cms kit"
+  [/\b(cms|c\.m\.s|se\s?eme\s?ese|cms\s?kit|ck\s?kit)\b/i,'CMS kit'],
+  // Recxline — "rec line", "reklin"
+  [/\b(recxline|rec\s?line|reklin|recks\s?line)\b/i,'Recxline'],
+
+  // ━━━ ELECTRONICS / BARTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Military circuit board — "circuito militar", "military board"
+  [/\b(military\s?circuit|military\s?board|circuito\s?militar|mcb|m\s?c\s?b)\b/i,'Military circuit board'],
+  // Printed circuit board — "circuito impreso", "pcb", "pe se be"
+  [/\b(circuit\s?board|printed\s?circuit|pcb|circuito\s?impreso|pe\s?se\s?be|p\s?c\s?b)\b/i,'Printed circuit board'],
+  // Nixxor — "nixor", "nicxor", "nixxors", "nix or"
+  [/\b(nixxor|nixor|nicxor|nixxors|nix\s?or|nik\s?sor)\b/i,'Nixxor'],
+  // Plexiglass — "plexiglas", "plexigl", "plexi"
+  [/\b(plexiglass|plexiglas|plexigl|plexi|plex\s?i\s?glass|plexí)\b/i,'Plexiglass'],
+  // Wi-Fi camera — "camara wifi", "wi fi cam"
+  [/\b(wifi\s?camera|wi\s?fi\s?camera|camara\s?wifi|cámara\s?wifi|wireless\s?camera|wi\s?fi\s?cam)\b/i,'Wi-Fi camera'],
+  // Spark plug — "bujía", "bujia", "chispa"
+  [/\b(spark\s?plug|sparkplug|bujía|bujia|bu\s?jía|chispa|bougía)\b/i,'Spark plug'],
+  // Military power filter — "filtro militar", "power filter"
+  [/\b(military\s?power\s?filter|military\s?power|filtro\s?militar|power\s?filter|filtro\s?de\s?poder)\b/i,'Military power filter'],
+  // Military cable — "cable militar"
+  [/\b(military\s?cable|cable\s?militar|mil\s?cable)\b/i,'Military cable'],
+  // Military gyrotachometer — "girotacómetro", "gyro taco"
+  [/\b(gyrotachometer|girotacómetro|gyro\s?taco|giro\s?tacómetro|gyro\s?tachometer)\b/i,'Military gyrotachometer'],
+  // CPU fan — "fan cpu", "ventilador cpu"
+  [/\b(cpu\s?fan|fan\s?cpu|ventilador\s?cpu|cooler\s?cpu|cpu\s?cooler)\b/i,'CPU fan'],
+  // Capacitors — "capacitores", "condensadores"
+  [/\b(capacitors|capacitor|capacitores|condensadores|capa\s?citors)\b/i,'Capacitors'],
+  // Microcontroller — "microcontrolador", "micro controller"
+  [/\b(microcontroller|microcontrolador|micro\s?controller|micro\s?controlador)\b/i,'Microcontroller board'],
+  // Electronic components — "componentes electronicos"
+  [/\b(electronic\s?components|componentes\s?electrónicos|componentes\s?electronicos|elec\s?components)\b/i,'Electronic components'],
+  // Energy-saving lamp — "lámpara ahorro", "bombilla ahorro"
+  [/\b(energy\s?saving\s?lamp|lámpara\s?ahorro|bombilla\s?ahorro|energy\s?lamp|ahorro\s?energía)\b/i,'Energy-saving lamp'],
+  // Gas analyzer — "analizador gas", "gas analyser"
+  [/\b(gas\s?analyzer|gas\s?analyser|analizador\s?de\s?gas|analiza\s?gas)\b/i,'Gas analyzer'],
+  // Geiger counter — "contador geiger", "geiger muller"
+  [/\b(geiger|geiger\s?counter|contador\s?geiger|contador\s?radiación|geiger\s?muller|gei\s?ger)\b/i,'Geiger-Muller counter'],
+  // Bundle of wires — "cables", "mazo cables", "bundle wires"
+  [/\b(bundle\s?of\s?wires|bundle\s?wires|mazo\s?cables|cables\s?bundle|manojo\s?cables|\bwires\b)\b/i,'Bundle of wires'],
+  // Magnet — "imán", "magne"
+  [/\b(\bmagnet\b|imán|iman|mag\s?net|magne\s?t)\b/i,'Magnet'],
+  // Duct tape — "cinta ducto", "duck tape", "cinta duct"
+  [/\b(duct\s?tape|duck\s?tape|cinta\s?ducto|cinta\s?duct|cinta\s?adhesiva\s?fuerte)\b/i,'Duct tape'],
+  // Mule tape — "cinta mula", "mule tap"
+  [/\b(mule\s?tape|mule\s?tap|cinta\s?mula|cinta\s?mul)\b/i,'Mule tape'],
+  // Insulating tape — "cinta aislante", "cinta isolante"
+  [/\b(insulating\s?tape|cinta\s?aislante|cinta\s?isolante|aislante\s?tape|cinta\s?aisladora)\b/i,'Insulating tape'],
+  // Paracord — "para cord", "paracaídas cord"
+  [/\b(paracord|para\s?cord|cuerda\s?paracaidas|cuerda\s?para|para\s?caídas\s?cord)\b/i,'Paracord'],
+  // Toolset — "set herramientas", "caja herramientas"
+  [/\b(toolset|tool\s?set|set\s?herramientas|caja\s?herramientas|kit\s?herramientas)\b/i,'Toolset'],
+  // Soldering iron — "soldador", "sol dador"
+  [/\b(soldering\s?iron|soldering|soldador|sol\s?dador|soldadora|solda\s?dor)\b/i,'Soldering iron'],
+  // Screwdriver — "destornillador", "desatornillador"
+  [/\b(screwdriver|destornillador|desatornillador|screw\s?driver|des\s?tornillador)\b/i,'Screwdriver'],
+  // Flat screwdriver — "destornillador plano", "flathead"
+  [/\b(flat\s?screwdriver|flathead|destornillador\s?plano|plano\s?destornillador|flat\s?head)\b/i,'Flat screwdriver'],
+  // Wrench — "llave inglesa", "llave tuercas"
+  [/\b(\bwrench\b|llave\s?inglesa|llave\s?tuercas|llave\s?de\s?tuercas|wrench\s?tool)\b/i,'Wrench'],
+  // Pliers — "alicates", "pinzas"
+  [/\b(\bpliers\b|alicates|pinzas|ali\s?cates|pin\s?zas)\b/i,'Pliers'],
+  // Hammer — "martillo"
+  [/\b(\bhammer\b|martillo|mar\s?tillo|ham\s?mer)\b/i,'Hammer'],
+  // Nippers — "tenazas", "cortaalambres"
+  [/\b(\bnippers\b|tenazas|cortaalambres|cor\s?taalambres|nip\s?pers)\b/i,'Nippers'],
+  // WD-40 — "we de cuarenta", "lubricante"
+  [/\b(wd[\s-]?40|we\s?de\s?cuarenta|lubricante\s?wd|w\s?d\s?40)\b/i,'WD-40 100ml'],
+  // Electric motor — "motor eléctrico", "motor electrico"
+  [/\b(electric\s?motor|motor\s?eléctrico|motor\s?electrico|elec\s?motor|e\s?motor)\b/i,'Electric motor'],
+  // Electric drill — "taladro eléctrico", "taladro"
+  [/\b(electric\s?drill|taladro\s?eléctrico|taladro|drill\s?electrico|elec\s?drill)\b/i,'Electric drill'],
+  // Light bulb — "bombilla", "foco", "bombillo"
+  [/\b(light\s?bulb|\bbulb\b|bombilla|foco|bombillo|focos|bom\s?billa)\b/i,'Bulb'],
+  // Power bank — "batería externa", "pila externa"
+  [/\b(power\s?bank|batería\s?externa|pila\s?externa|powerbank|bateria\s?externa)\b/i,'Power bank'],
+  // PSU — "fuente poder", "fuente de poder"
+  [/\b(\bpsu\b|fuente\s?poder|fuente\s?de\s?poder|power\s?supply|fuente\s?de\s?alimentación)\b/i,'PSU'],
+  // Lion battery — "batería lion", "bateria lion"
+  [/\b(lion\s?battery|batería\s?lion|bateria\s?lion|lion\s?bat|batería\s?li\s?on)\b/i,'Lion battery'],
+  // 6-STEN battery — "seis sten", "military battery", "batería militar"  
+  [/\b(6sten|seis\s?sten|military\s?battery|bateria\s?militar|seis\s?s\s?ten|6\s?sten)\b/i,'6-STEN-140-M battery'],
+  // Battery pack — "paquete baterías", "pack baterías"
+  [/\b(battery\s?pack|paquete\s?baterías|pack\s?baterías|baterias\s?pack|bate\s?rias)\b/i,'Battery pack'],
+  // Broken LCD — "lcd roto", "pantalla rota"
+  [/\b(broken\s?lcd|lcd\s?roto|pantalla\s?rota|lcd\s?broken|él\s?sé\s?dé)\b/i,'Broken LCD'],
+  // DVD drive — "unidad dvd", "lector dvd"
+  [/\b(dvd\s?drive|unidad\s?dvd|lector\s?dvd|dé\s?vé\s?dé|d\s?v\s?d)\b/i,'DVD drive'],
+  // Damaged hard drive — "disco duro dañado", "damaged drive"
+  [/\b(damaged\s?hard\s?drive|disco\s?duro\s?dañado|damaged\s?drive|damaged\s?hdd)\b/i,'Damaged hard drive'],
+  // Gas analyzer — already above
+  // Far-forward GPS — "gps amplifier", "amplificador gps"
+  [/\b(gps\s?amplifier|amplificador\s?gps|far\s?forward\s?gps|signal\s?amplifier)\b/i,'Far-forward GPS Signal Amplifier Unit'],
+
+  // ━━━ CONTAINERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // SICC — "sik", "sick case", "sic", "si ce ce"
+  [/\b(sicc|sick\s?case|sic\s?case|sick\s?pouch|sicc\s?pouch|\bsic\b|\bsik\b|si\s?ce\s?ce)\b/i,'SICC'],
+  // Docs case — "caja documentos", "case documentos"
+  [/\b(docs\s?case|document\s?case|doc\s?case|documentos|caja\s?documentos|case\s?docs)\b/i,'Docs case'],
+  // Wallet — "cartera", "billetera"
+  [/\b(\bwallet\b|cartera|billetera|bil\s?letera|bil\s?tera)\b/i,'Wallet'],
+  // Keytool — "ki tul", "key chain", "llavero"
+  [/\b(keytool|key\s?tool|key\s?chain|llavero|ki\s?tul|key\s?tul)\b/i,'Keytool'],
+  // Pilgrim — "pil grim", "pilgram"
+  [/\b(pilgrim|pelgrim|pilgram|pil\s?grim|mochila\s?pilgrim)\b/i,'Pilgrim'],
+  // Tri-Zip — "trizip", "tri zip", "mochila tri"
+  [/\b(tri[\s-]?zip|trizip|mochila\s?tri|tri\s?zip\s?bag)\b/i,'Tri-Zip'],
+  // Magazine case — "portacargadores", "mag case"
+  [/\b(mag\s?case|magazine\s?case|portacargadores|porta\s?cargadores|mag\s?box)\b/i,'Magazine case'],
+  // Ammo case — "caja munición", "ammo box"
+  [/\b(ammo\s?case|ammo\s?box|caja\s?munición|caja\s?municion|ammo\s?container)\b/i,'Ammo case'],
+  // Med case — "caja médica", "med box"
+  [/\b(med\s?case|medical\s?case|caja\s?médica|caja\s?medica|med\s?box)\b/i,'Med case'],
+  // Gun case — "caja armas", "weapon case", "rifle case"
+  [/\b(gun\s?case|weapon\s?case|caja\s?armas|rifle\s?case|caja\s?rifles)\b/i,'Gun case'],
+  // Grenade case — "caja granadas"
+  [/\b(grenade\s?case|grenade\s?box|caja\s?granadas|grenade\s?container)\b/i,'Grenade case'],
+  // THICC item case — "tick item", "thicc case", "ti hic"
+  [/\b(thicc|thicc\s?item|thicc\s?case|tick\s?item|t\s?h\s?i\s?c\s?c|ti\s?hic|the\s?hick|item\s?thicc)\b/i,'THICC item case'],
+  // THICC weapon case — "thicc armas", "thicc weapons"
+  [/\b(thicc\s?weapon|thicc\s?armas|weapon\s?thicc|thick\s?weapon)\b/i,'THICC weapon case'],
+  // Lucky Scav — "lucky scab", "caja scav", "suerte scav"
+  [/\b(lucky\s?scav|lucky\s?scab|caja\s?scav|suerte\s?scav|scav\s?junk)\b/i,'Lucky Scav junkbox'],
+  // Secure containers — "kappa", "gamma", "epsilon", "beta", "theta"
+  [/\b(\bkappa\b|kapa|capa\s?contenedor)\b/i,'Secure container Kappa'],
+  [/\b(\bgamma\b|gama|contenedor\s?gamma)\b/i,'Secure container Gamma'],
+  [/\b(\bepsilon\b|epsilón|contenedor\s?epsilon)\b/i,'Secure container Epsilon'],
+
+  // ━━━ PROVISIONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Aquamari — "aquamarine", "agua mari", "aqua mary"
+  [/\b(aquamari|aquamarine|agua\s?mari|aqua\s?mary|aqua\s?mari|aquamary)\b/i,'Aquamari'],
+  // Emelya — "emelia", "emelía"
+  [/\b(emelya|emelia|emelía|eme\s?lia|eme\s?lya|emelya\s?crackers)\b/i,'Emelya'],
+  // Tushonka — "tushon ka", "tusho", "tushanka"
+  [/\b(tushonka|tushon\s?ka|tu\s?shonka|tushanka|tush\s?onka|leche\s?condensada|condensed\s?milk)\b/i,'Tushonka'],
+  // Coffee — "can of coffee", "lata café"
+  [/\b(can\s?of\s?coffee|café|coffe|koffee|lata\s?café|coffee\s?can|café\s?enlatado)\b/i,'Can of coffee'],
+  // Herring — "arenque", "herring can"
+  [/\b(\bherring\b|arenque|herrings|lata\s?arenque|can\s?of\s?herring|sardinas)\b/i,'Can of herring'],
+  // Crackers — "galletas", "krakers"
+  [/\b(\bcrackers\b|galletas|cracker|krakers|crack\s?ers|galle\s?tas)\b/i,'Crackers'],
+  // Sugar — "azúcar", "azucar", "sugar pack"
+  [/\b(\bsugar\b|azúcar|azucar|sugar\s?pack|azú\s?car)\b/i,'Sugar'],
+  // Mayonnaise — "mayonesa", "mayo"
+  [/\b(mayonnaise|mayonesa|mayo\s?naise|mayo\s?nesa|mayo\s?tarkov)\b/i,'Mayonnaise'],
+  // Squash — "calabaza bebida", "squash drink"
+  [/\b(\bsquash\b|calabaza\s?bebida|squash\s?drink|bebida\s?squash)\b/i,'Squash'],
+  // Tarcola — "tar cola", "tarcola drink"
+  [/\b(tarcola|tar\s?cola|tárco\s?la|tarcola\s?drink)\b/i,'Tarcola'],
+  // Iskra — "rations", "iskra rations", "raciones iskra"
+  [/\b(\biskra\b|iskra\s?rations|raciones\s?iskra|is\s?kra)\b/i,'Iskra rations'],
+  // Bottle of water — "botella agua", "water bottle"
+  [/\b(water\s?bottle|botella\s?agua|botella\s?de\s?agua|bottle\s?water)\b/i,'Bottle of water (0.6L)'],
+  // Bottle of Fierce Hatchling moonshine — already handled by moonshine
+
+  // ━━━ BUILDING MATERIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Nails — "clavos", "nail pack"
+  [/\b(\bnails\b|\bnail\b|clavos|clavo|nail\s?pack|pack\s?clavos)\b/i,'Nails'],
+  // Bolts — "pernos", "bolt pack", "tornillos"
+  [/\b(\bbolts\b|\bbolt\b|pernos|perno|tornillos|tornillo|bolt\s?pack)\b/i,'Bolts'],
+  // Nuts — "tuercas", "nut pack"
+  [/\b(\bnuts\b|\bnut\b|tuercas|tuerca|nut\s?pack)\b/i,'Nuts'],
+  // Corrugated hose — "manguera", "hose corrugated"
+  [/\b(corrugated\s?hose|manguera\s?corrugada|manguera|hose\s?corrug)\b/i,'Corrugated hose'],
+  // Metal cutting scissors — "tijeras metal", "metal scissors"
+  [/\b(metal\s?cutting\s?scissors|tijeras\s?metal|metal\s?scissors|tijeras\s?corte)\b/i,'Metal cutting scissors'],
+  // Dry fuel — "combustible seco", "dry fuel tablet"
+  [/\b(dry\s?fuel|combustible\s?seco|fuel\s?seco|d\s?fuel|combustible\s?d)\b/i,'Dry fuel'],
+  // Metal fuel tank — "tanque combustible", "fuel tank"
+  [/\b(metal\s?fuel\s?tank|tanque\s?combustible|fuel\s?tank|metal\s?tank|tan\s?que\s?fuel)\b/i,'Metal fuel tank'],
+  // Firesteel — "encendedor acero", "fire steel"  
+  [/\b(firesteel|fire\s?steel|encendedor\s?acero|old\s?firesteel|fire\s?starter)\b/i,'Old Firesteel'],
+  // Silicone tube — "tubo silicona", "silicon tube"
+  [/\b(silicone\s?tube|tubo\s?silicona|silicon\s?tube|tubo\s?sili)\b/i,'Silicone tube'],
+  // Pressure gauge — "manómetro", "manometro", "gauge"
+  [/\b(pressure\s?gauge|manómetro|manometro|gauge\s?pressure|presión\s?gauge)\b/i,'Pressure gauge'],
+
+  // ━━━ ARMOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(\bpaca\b|paka|paca\s?armor)\b/i,'PACA'],
+  [/\b(6b2|seis\s?b\s?dos|seis\s?be\s?2)\b/i,'6B2'],
+  [/\b(6b3|seis\s?b\s?tres|seis\s?be\s?3)\b/i,'6B3'],
+  [/\b(6b13|seis\s?b\s?trece|6\s?b\s?13)\b/i,'6B13'],
+  [/\b(6b23|seis\s?b\s?veinti|6\s?b\s?23)\b/i,'6B23'],
+  [/\b(6b43|seis\s?b\s?cuarenta|6\s?b\s?43)\b/i,'6B43'],
+  [/\b(\bslick\b|slik|slick\s?armor|eslic)\b/i,'Slick'],
+  [/\b(\bzhuk\b|zhuc|zuk|chuk|zhuk\s?armor)\b/i,'Zhuk'],
+  [/\b(korund|corund|corand|ko\s?rund)\b/i,'Korund'],
+  [/\b(kirasa|kiraza|kirazza|ki\s?rasa)\b/i,'Kirasa'],
+  [/\b(fort\s?redut|fort\s?armor|\bredut\b)\b/i,'Fort Redut'],
+  [/\b(hexgrid|hex\s?grid|ex\s?grid|hexagonal\s?grid)\b/i,'HexGrid'],
+  [/\b(thor\s?armor|\bthor\b|thor\s?ic)\b/i,'THOR'],
+  [/\b(osprey|osprei|osprey\s?armor|os\s?prey)\b/i,'Osprey'],
+  [/\b(defender|defensor|defender\s?armor|defen\s?der)\b/i,'Defender'],
+  [/\b(trooper|tru\s?per|trooper\s?armor)\b/i,'Trooper'],
+  [/\b(\bkirasa\b|kira\s?sa|kirassa)\b/i,'Kirasa'],
+
+  // ━━━ HELMETS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(altyn|altin|altín|altyn\s?helmet)\b/i,'Altyn'],
+  [/\b(sfera|esfera|sphera|sphear|esfe\s?ra)\b/i,'Sfera'],
+  [/\b(rys[\s-]?t|rises\s?t|rys\s?t|ris\s?t)\b/i,'Rys-T'],
+  [/\b(tc[\s-]?2002|tc\s?dos\s?mil|te\s?ce\s?2002)\b/i,'TC-2002'],
+  [/\b(tc[\s-]?800|tc\s?ochocientos|te\s?ce\s?800)\b/i,'TC-800'],
+  [/\b(fast\s?mt|fast\s?helmet|fast\s?mt\s?helmet)\b/i,'FAST MT'],
+  [/\b(lshz|l\s?sh\s?z|el\s?sh\s?z|elshz)\b/i,'LShZ-2DTM'],
+  [/\b(kolpak|kolpac|kol\s?pak|col\s?pack)\b/i,'Kolpak-1S'],
+  [/\b(ssh68|ssh\s?68|sch\s?68|ese\s?ese\s?hache\s?68)\b/i,'SSh-68'],
+  [/\b(zsh|z\.s\.h|ze\s?sh|z\s?s\s?h)\b/i,'ZSh-1-2M'],
+  [/\b(maska[\s-]?1|maska\s?one|mas\s?ka\s?1)\b/i,'Maska-1SCh'],
+  [/\b(\bops[\s-]?core\b|opcore|ops\s?core\s?fast)\b/i,'Ops-Core FAST'],
+  [/\b(galvion|galvión|gal\s?vion)\b/i,'Galvion Caiman'],
+
+  // ━━━ WEAPONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(ak[\s-]?74m)\b/i,'AK-74M'],
+  [/\b(ak[\s-]?74)\b/i,'AK-74'],
+  [/\b(ak[\s-]?101)\b/i,'AK-101'],
+  [/\b(ak[\s-]?102)\b/i,'AK-102'],
+  [/\b(ak[\s-]?103)\b/i,'AK-103'],
+  [/\b(ak[\s-]?104)\b/i,'AK-104'],
+  [/\b(ak[\s-]?105)\b/i,'AK-105'],
+  [/\b(hk[\s-]?416|hache\s?ka\s?416|acheca\s?416)\b/i,'HK 416'],
+  [/\b(m4\s?a1|m4\s?a\s?1|m\s?cuatro|eme\s?cuatro)\b/i,'M4A1'],
+  [/\b(sa[\s-]?58|sa\s?cincuenta)\b/i,'SA-58'],
+  [/\b(mk[\s-]?18|mark\s?18|marco\s?18|eme\s?ka\s?18)\b/i,'Mk-18'],
+  [/\b(mdr|em\s?de\s?erre|eme\s?de\s?erre|emdr|emederr|em\s?d\s?r|emdeer)\b/i,'MDR'],
+  [/\b(\baug\b|a\.u\.g|auge|steyr\s?aug)\b/i,'AUG'],
+  [/\b(scar[\s-]?l|scar\s?light|escar\s?l|escar\s?ele)\b/i,'SCAR-L'],
+  [/\b(scar[\s-]?h|scar\s?heavy|escar\s?h|escar\s?ache)\b/i,'SCAR-H'],
+  [/\b(\bfal\b|f\.a\.l|efe\s?a\s?ele)\b/i,'FAL'],
+  [/\b(g36|ge\s?36|gé\s?36)\b/i,'G36'],
+  [/\b(g28|ge\s?28|gé\s?28|g28\s?patrol)\b/i,'G28'],
+  [/\b(ash[\s-]?12|ash\s?doce|a\s?s\s?h\s?12)\b/i,'ASh-12'],
+  [/\b(as\s?val|val|v\.a\.l\.)\b/i,'AS VAL'],
+  [/\b(vss|v\.s\.s|vintorez|vin\s?torez)\b/i,'VSS Vintorez'],
+  [/\b(sr[\s-]?25|sr\s?veinticinco|ese\s?erre\s?25)\b/i,'SR-25'],
+  [/\b(m700|m\s?700)\b/i,'M700'],
+  [/\b(svds|s\.v\.d\.s)\b/i,'SVDS'],
+  [/\b(\bsvd\b|s\.v\.d)\b/i,'SVD'],
+  [/\b(\brpk\b|r\.p\.k|erre\s?pe\s?ka)\b/i,'RPK'],
+  [/\b(\bpkm\b|p\.k\.m|pe\s?ka\s?eme)\b/i,'PKM'],
+  [/\b(pp[\s-]?91|\bbizon\b)\b/i,'PP-91'],
+  [/\b(pp[\s-]?19)\b/i,'PP-19'],
+  [/\b(\bmpx\b)\b/i,'MPX'],
+  [/\b(\bmp5\b)\b/i,'MP5'],
+  [/\b(\bmp7\b)\b/i,'MP7'],
+  [/\b(\bump\b)\b/i,'UMP'],
+  [/\b(\bvector\b|vextor)\b/i,'Vector'],
+  [/\b(glock\s?17|gloc\s?17)\b/i,'Glock 17'],
+  [/\b(glock\s?18|gloc\s?18)\b/i,'Glock 18'],
+  [/\b(p226|sig\s?226|sierra\s?226)\b/i,'SIG P226'],
+  [/\b(desert\s?eagle|deagle|águila\s?del\s?desierto|aguila\s?desierto)\b/i,'Desert Eagle'],
+  [/\b(makarov|makaroff|macarov|maka\s?rov)\b/i,'Makarov'],
+  [/\b(\bmosin\b|mosín|mosson)\b/i,'Mosin'],
+  [/\b(\bsks\b|ese\s?ka\s?ese)\b/i,'SKS'],
+  [/\b(\brsass\b|r\.sass|erre\s?sass)\b/i,'RSASS'],
+  [/\b(lobaev|lobaef|lobayev)\b/i,'Lobaev'],
+  [/\b(orsis|orsys|or\s?sis)\b/i,'Orsis T-5000'],
+  [/\b(\bdvl\b|d\.v\.l)\b/i,'DVL-10'],
+  [/\b(\bkord\b|k\.o\.r\.d)\b/i,'Kord'],
+  [/\b(\bacr\b|a\.c\.r)\b/i,'ACR'],
+  [/\b(\btt\b|t\.t\.|tokarev|tula\s?tokarev)\b/i,'TT pistol'],
+  [/\b(mp[\s-]?43|mr\s?43|eme\s?pe\s?43|escopeta)\b/i,'MP-43'],
+  [/\b(\bkedr\b|ke\s?dr|ked\s?r)\b/i,'Kedr'],
+  [/\b(\bklin\b|kli\s?n|clin)\b/i,'Klin'],
+  [/\b(saiga\s?12|saiga|sai\s?ga|saga\s?12)\b/i,'Saiga-12'],
+  [/\b(mp[\s-]?153|mp\s?153|eme\s?pe\s?153)\b/i,'MP-153'],
+  [/\b(rsh[\s-]?12|r\s?sh\s?12)\b/i,'RSh-12'],
+  [/\b(uzi\s?pro|uzi|u\s?zi|uzi\s?pistol)\b/i,'UZI PRO'],
+  [/\b(mp7\s?a2|mp7a2|eme\s?pe\s?7\s?a2)\b/i,'MP7A2'],
+  [/\b(p90|pe\s?noventa|p\s?90)\b/i,'P90'],
+  [/\b(\bsvu\b|s\.v\.u)\b/i,'SVU'],
+  [/\b(\bvpo\b|vpo[\s-]?209|vpo\s?dos\s?cero\s?nueve)\b/i,'VPO-209'],
+
+  // ━━━ AMMO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(igolnik|igolnick|igor\s?nik|igol\s?nik)\b/i,'Igolnik'],
+  [/\b(\bm61\b|eme\s?sesenta\s?y\s?uno)\b/i,'M61'],
+  [/\b(\bm62\b|eme\s?sesenta\s?y\s?dos)\b/i,'M62'],
+  [/\b(m855\s?a1|m\s?855\s?a\s?1|m855a1)\b/i,'M855A1'],
+  [/\b(\bm856\b|m856\s?a1)\b/i,'M856A1'],
+  [/\b(\bm993\b)\b/i,'M993'],
+  [/\b(7n40|siete\s?n\s?cuarenta)\b/i,'7N40'],
+  [/\b(7n39|siete\s?n\s?39)\b/i,'7N39'],
+  [/\b(7n37|siete\s?n\s?37)\b/i,'7N37'],
+  [/\b(\bofz\b|o\.f\.z|o\s?efe\s?zeta)\b/i,'OFZ'],
+  [/\b(flechette|flecheta|flesh\s?et)\b/i,'Flechette'],
+  [/\b(ap[\s-]?20|a\s?p\s?veinte)\b/i,'AP-20 slug'],
+  [/\b(pfm[\s-]?1|p\.f\.m|pe\s?efe\s?eme)\b/i,'PFM-1'],
+  [/\b(magnum\s?buckshot|magnum\s?buck|magnum\s?perdigones)\b/i,'Magnum buckshot'],
+  [/\b(7n12|siete\s?n\s?doce|7\s?n\s?12)\b/i,'7N12 BP'],
+  [/\b(m995|m\s?995)\b/i,'M995'],
+  [/\b(sz[\s-]?1|ése\s?zeta\s?uno)\b/i,'SZ-1'],
+
+  // ━━━ KEYS / KEYCARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [/\b(red\s?keycard|tarjeta\s?roja|llave\s?roja|keycard\s?roja)\b/i,'Red keycard'],
+  [/\b(black\s?keycard|tarjeta\s?negra|llave\s?negra|keycard\s?negra)\b/i,'Black keycard'],
+  [/\b(blue\s?keycard|tarjeta\s?azul|llave\s?azul|keycard\s?azul)\b/i,'Blue keycard'],
+  [/\b(green\s?keycard|tarjeta\s?verde|llave\s?verde|keycard\s?verde)\b/i,'Green keycard'],
+  [/\b(violet\s?keycard|purple\s?keycard|tarjeta\s?violeta|llave\s?violeta)\b/i,'Violet keycard'],
+  [/\b(yellow\s?keycard|tarjeta\s?amarilla|llave\s?amarilla|keycard\s?amarilla)\b/i,'Yellow keycard'],
+  [/\b(orange\s?keycard|tarjeta\s?naranja|llave\s?naranja)\b/i,'Orange keycard'],
+  [/\b(cyan\s?keycard|tarjeta\s?cyan|llave\s?cyan|keycard\s?turquesa)\b/i,'Cyan keycard'],
+  [/\b(magenta\s?keycard|tarjeta\s?magenta|keycard\s?magenta)\b/i,'Magenta keycard'],
+  [/\b(dorm\s?314|habitacion\s?314|cuarto\s?314|room\s?314)\b/i,'Dorm room 314 marked key'],
+  [/\b(dorm\s?206|habitacion\s?206|cuarto\s?206|room\s?206)\b/i,'Dorm room 206 key'],
+  [/\b(rb[\s-]?ao|r\s?b\s?a\s?o)\b/i,'RB-AO'],
+  [/\b(rb[\s-]?am|r\s?b\s?a\s?m)\b/i,'RB-AM'],
+  [/\b(rb[\s-]?st|r\s?b\s?s\s?t)\b/i,'RB-ST'],
+  [/\b(rb[\s-]?bk|rb\s?bk\s?marked)\b/i,'RB-BK marked key'],
+  [/\b(rb[\s-]?kp|r\s?b\s?k\s?p)\b/i,'RB-KP'],
+  [/\b(rb[\s-]?ot|r\s?b\s?o\s?t)\b/i,'RB-OT'],
+  [/\b(rb[\s-]?mp|r\s?b\s?m\s?p)\b/i,'RB-MP'],
+  [/\b(rb[\s-]?pp|r\s?b\s?p\s?p)\b/i,'RB-PP'],
+  [/\b(rb[\s-]?ps|r\s?b\s?p\s?s)\b/i,'RB-PS'],
 ];
 const FUZZY_TARGETS=[
-  'LEDX','GPU','CPU','HDD','SSD','AFAK','PACA','SICC','Tetriz',
+  'LEDX','GPU','CPU','HDD','SSD','AFAK','PACA','SICC','Tetriz','MDR',
   'Salewa','Grizzly','Propital','Trimadol','Igolnik','Altyn','Sfera',
   'Korund','Bitcoin','Roler','Moonshine','Defibrillator','Ophthalmoscope',
   'Pilgrim','Keytool','Slick','Zhuk','Kirasa','RSASS','Mosin',
+  'AUG','FAL','VAL','VSS','SVD','SVDS','PKM','RPK','MPX','SCAR',
+  'Vaseline','Nixxor','Paracord','Aquamari','Emelya','Chainlet',
+  'CAT','PSU','OFZ','Flechette','Makarov','Vector','Lobaev','Orsis',
 ];
 function levenshtein(a,b){
   const m=a.length,n=b.length;
@@ -970,21 +1378,24 @@ document.addEventListener('keydown',e=>{
     return;
   }
   const tgt=e.target.tagName;
-  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
+  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||tgt==='BUTTON') return;
   const h=state.hotkey;
   const match=e.code===h.code&&!!e.ctrlKey===h.ctrl&&!!e.altKey===h.alt&&!!e.shiftKey===h.shift&&!e.repeat;
   console.log('[KEY] keydown code='+e.code+' target='+tgt+' match='+match+' repeat='+e.repeat+' listening='+state.listening);
   if(match){
     e.preventDefault();
+    // In Electron, hotkey is handled by uiohook via IPC — skip Web Speech
+    if(window.electronAPI) return;
     startListening().catch(err=>console.error('[KEY] startListening error:',err));
   }
 });
 document.addEventListener('keyup',e=>{
   if(captureMode) return;
   const tgt=e.target.tagName;
-  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
+  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||tgt==='BUTTON') return;
   if(e.code===state.hotkey.code){
     console.log('[KEY] keyup hotkey released, calling stopListening');
+    if(window.electronAPI) return; // Electron handles this via uiohook
     stopListening();
   }
 });
@@ -1102,6 +1513,7 @@ function formatPrice(n){
 async function searchItem(rawQuery){
   const query=correctQuery(rawQuery.trim());
   if(!query||query.length<2) return;
+  state.lastQuery = query; // track for PVP/PVE switch re-search
 
   if(query.toLowerCase()!==rawQuery.trim().toLowerCase()){
     const tr=document.getElementById('transcript-text');
@@ -1243,10 +1655,12 @@ applyLang();
 applyServerMode();
 document.getElementById('hotkey-display').textContent=hotkeyLabel(state.hotkey);
 
-if(SpeechRecognitionAPI){
-  // Request the mic ONCE on app open and keep that stream alive.
-  // A persistent active stream is what lets Edge/Opera reuse the grant for
-  // both the mic test and the hotkey recognizer without prompting again.
+if(window.electronAPI){
+  // Electron: skip Web Speech API init entirely — Vosk handles voice
+  // Status set by vosk-status events from main process
+  setStatus('idle',t('statusReady'));
+}else if(SpeechRecognitionAPI){
+  // Browser: use Web Speech API with persistent mic stream
   setStatus('loading',t('initMic'));
   ensureMic().then(ok=>{
     if(ok){ setStatus('ok',t('micReady')); setTimeout(()=>setStatus('idle',t('statusReady')),1200); }
@@ -1290,6 +1704,311 @@ function syncHotkeyBadge(){
 
 // Update badge when hotkey is confirmed
 document.getElementById('ov-confirm').addEventListener('click', syncHotkeyBadge);
+
+
+
+
+
+
+
+// ── ELECTRON: VOSK + HOLD-TO-TALK ────────────
+if (window.electronAPI) {
+  const transcriptEl = document.getElementById('transcript-text');
+  const holdBtn      = document.getElementById('hold-btn');
+  const dotEl        = document.getElementById('dot');
+  const statusEl     = document.getElementById('status-text');
+
+  let elecDown   = false;
+  let modelReady = false;
+  let audioStarting = false; // prevent concurrent starts
+
+  // ── VOSK DOWNLOAD MODAL ──────────────────────
+  const modal        = document.getElementById('vosk-modal');
+  const modalDesc    = document.getElementById('vosk-modal-desc');
+  const progressWrap = document.getElementById('vosk-progress-wrap');
+  const progressBar  = document.getElementById('vosk-progress-bar');
+  const progressText = document.getElementById('vosk-progress-text');
+  const statusMsg    = document.getElementById('vosk-status-msg');
+  const dlBtn        = document.getElementById('vosk-download-btn');
+  const cancelBtn    = document.getElementById('vosk-cancel-btn');
+
+  function showModal(){ modal.classList.remove('hidden'); }
+  function hideModal(){ modal.classList.add('hidden'); }
+
+  cancelBtn.addEventListener('click', hideModal);
+  dlBtn.addEventListener('click', () => {
+    dlBtn.disabled = true;
+    dlBtn.textContent = '⏳ DESCARGANDO...';
+    progressWrap.style.display = 'block';
+    progressText.textContent = 'Conectando...';
+    statusMsg.textContent = '';
+    window.electronAPI.voskDownloadModel();
+  });
+
+  window.electronAPI.onVoskDownload((data) => {
+    if (data.status === 'start') {
+      statusMsg.textContent = data.message;
+    } else if (data.status === 'downloading') {
+      progressBar.style.width = data.pct + '%';
+      progressText.textContent = data.mb + ' MB / ' + data.mbT + ' MB (' + data.pct + '%)';
+    } else if (data.status === 'extracting') {
+      progressBar.style.width = '100%';
+      progressText.textContent = '';
+      statusMsg.textContent = '⚙ ' + data.message;
+      dlBtn.textContent = '⚙ INSTALANDO...';
+    } else if (data.status === 'done') {
+      statusMsg.textContent = '✓ ' + data.message;
+      dlBtn.textContent = '⏳ Inicializando...';
+      dlBtn.disabled = true;
+      // Modal stays open until vosk-status 'ready' fires (which calls hideModal)
+    } else if (data.status === 'error') {
+      statusMsg.textContent = '✗ Error: ' + data.message;
+      dlBtn.disabled = false;
+      dlBtn.textContent = '↺ REINTENTAR';
+    }
+  });
+
+  // ── VOSK STATUS ──────────────────────────────
+  window.electronAPI.onVoskStatus((data) => {
+    if (data.status === 'ready') {
+      modelReady = true;
+      dotEl.className = 'dot ok';
+      statusEl.textContent = t('statusReady');
+      hideModal();
+    } else if (data.status === 'no-model') {
+      modelReady = false;
+      // Show download modal automatically on first run
+      modalDesc.textContent = lang === 'es'
+        ? 'Para el reconocimiento de voz offline se necesita descargar el modelo (~40MB). Solo se hace una vez.'
+        : 'Offline voice recognition needs a model download (~40MB). Only done once.';
+      showModal();
+    } else if (data.status === 'error') {
+      dotEl.className = 'dot error';
+      statusEl.textContent = '⚠ Error Vosk: ' + data.message;
+      window.electronAPI.readLog().then(log => {
+        modalDesc.textContent = 'Error al inicializar:';
+        dlBtn.style.display = 'none';
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'font-size:11px;color:#e05050;text-align:left;max-height:180px;overflow-y:auto;background:#000;padding:8px;border-radius:4px;white-space:pre-wrap;margin-bottom:12px';
+        pre.textContent = data.message + '\n\n' + log;
+        statusMsg.innerHTML = ''; statusMsg.appendChild(pre);
+        showModal();
+      }).catch(()=>{});
+    }
+  });
+
+  // ── VOSK RESULTS ─────────────────────────────
+  window.electronAPI.onVoskResult((data) => {
+    if (data.partial) {
+      transcriptEl.textContent = data.partial;
+      transcriptEl.classList.add('active');
+    }
+    if (data.final && data.final.trim()) {
+      const raw = data.final.trim();
+      const corrected = correctQuery(raw);
+      transcriptEl.textContent = corrected !== raw ? '"'+raw+'" → '+corrected : corrected;
+      transcriptEl.classList.add('active');
+      searchItem(corrected);
+    }
+  });
+
+  // ── VOSK LISTENING STATE ──────────────────────
+  window.electronAPI.onVoskListening((active) => {
+    if (active) {
+      dotEl.className = 'dot listening';
+      statusEl.textContent = lang==='es' ? 'Escuchando... habla ahora' : 'Listening... speak now';
+      holdBtn.classList.add('active');
+      holdBtn.textContent = t('holdActive');
+    } else {
+      dotEl.className = modelReady ? 'dot ok' : 'dot';
+      if (!state.loading) statusEl.textContent = t('statusReady');
+      holdBtn.classList.remove('active');
+      holdBtn.textContent = t('holdBtn');
+    }
+  });
+
+  // ── WEB AUDIO CAPTURE → VOSK ─────────────────
+  let audioCtx = null;
+  let audioStream = null;
+  let audioProcessor = null;
+
+  async function elecStart() {
+    if (elecDown || audioStarting) return;
+    if (!modelReady) { showModal(); return; }
+    elecDown = true;
+    audioStarting = true;
+    transcriptEl.textContent = ''; transcriptEl.classList.add('active');
+
+    // Tell main to start Vosk listening state
+    window.electronAPI.voskStart();
+
+    // Capture mic using MediaRecorder — no CSP issues, works reliably in Electron
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: {
+        channelCount: 1,
+        echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+      }});
+
+      // Use MediaRecorder to get raw PCM via Web Audio API analyser
+      // but send chunks via a ScriptProcessor-free method:
+      // Create AudioContext at 16kHz, use a periodic flush approach
+      audioCtx = new AudioContext({ sampleRate: 16000 });
+      const source = audioCtx.createMediaStreamSource(audioStream);
+
+      // Buffer accumulator
+      let pcmBuffer = [];
+      const CHUNK_SIZE = 4096; // samples per chunk to vosk
+
+      // Use AudioWorklet via data: URI to avoid CSP blob: restriction
+      const workletSrc = `
+class P extends AudioWorkletProcessor{
+  process(i){
+    const d=i[0][0];
+    if(!d)return true;
+    const b=new Int16Array(d.length);
+    for(let k=0;k<d.length;k++){const s=Math.max(-1,Math.min(1,d[k]));b[k]=s<0?s*32768:s*32767;}
+    this.port.postMessage(b.buffer,[b.buffer]);
+    return true;
+  }
+}
+registerProcessor('p',P);`;
+
+      let workletLoaded = false;
+      try {
+        // Try data: URI first (Electron 28 supports it)
+        const dataUrl = 'data:application/javascript;base64,' + btoa(workletSrc);
+        await audioCtx.audioWorklet.addModule(dataUrl);
+        audioProcessor = new AudioWorkletNode(audioCtx, 'p');
+        audioProcessor.port.onmessage = (ev) => {
+          if (!elecDown) return;
+          window.electronAPI.sendAudioChunk(ev.data);
+        };
+        source.connect(audioProcessor);
+        workletLoaded = true;
+        console.log('[AUDIO] Capture started via AudioWorklet data: URI');
+      } catch(workletErr) {
+        console.warn('[AUDIO] AudioWorklet failed:', workletErr.message, '— falling back to onaudioprocess');
+      }
+
+      if (!workletLoaded) {
+        // Fallback: deprecated ScriptProcessor but with error suppression
+        // This won't crash in Electron 28 if we handle it carefully
+        audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+        audioProcessor.onaudioprocess = (ev) => {
+          if (!elecDown) return;
+          const f = ev.inputBuffer.getChannelData(0);
+          const b = new Int16Array(f.length);
+          for(let k=0;k<f.length;k++){const s=Math.max(-1,Math.min(1,f[k]));b[k]=s<0?s*32768:s*32767;}
+          window.electronAPI.sendAudioChunk(b.buffer);
+        };
+        source.connect(audioProcessor);
+        audioProcessor.connect(audioCtx.destination);
+        console.log('[AUDIO] Capture started via ScriptProcessor (fallback)');
+      }
+
+      audioStarting = false;
+      if (!state.micReady) { state.micReady=true; enumerateMics().catch(()=>{}); }
+    } catch(e) {
+      console.error('[AUDIO] Mic error:', e.message, e.name);
+      elecDown = false;
+      audioStarting = false;
+      return;
+    }
+  }
+
+  function elecStop() {
+    if (!elecDown) return;
+    elecDown = false;
+    audioStarting = false;
+    // Stop audio capture
+    if (audioProcessor) { audioProcessor.disconnect(); audioProcessor = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+    // Tell main to finalize and get last result
+    window.electronAPI.voskStop();
+  }
+
+  // Override hold button
+  const hb = holdBtn.cloneNode(true);
+  holdBtn.parentNode.replaceChild(hb, holdBtn);
+  hb.addEventListener('mousedown',  e => { e.preventDefault(); elecStart(); });
+  hb.addEventListener('mouseup',    () => elecStop());
+  hb.addEventListener('mouseleave', () => elecStop());
+  hb.addEventListener('touchstart', e => { e.preventDefault(); elecStart(); }, {passive:false});
+  hb.addEventListener('touchend',   () => elecStop());
+
+  // Global hotkey
+  window.electronAPI.onHotkeyDown(() => elecStart());
+  window.electronAPI.onHotkeyUp(()   => elecStop());
+
+  // ── VOSK TEST BUTTON (bypasses uiohook, tests Vosk directly) ──
+  const voskTestSection = document.getElementById('vosk-test-section');
+  const voskTestBtn = document.getElementById('vosk-test-btn');
+  const voskTestStop = document.getElementById('vosk-test-stop-btn');
+  const voskTestStatus = document.getElementById('vosk-test-status');
+
+  if (voskTestSection) voskTestSection.style.display = 'block';
+
+  if (voskTestBtn) {
+    voskTestBtn.addEventListener('mousedown', async (e) => {
+      e.preventDefault();
+      voskTestStatus.textContent = 'Iniciando...';
+      await elecStart();
+      voskTestBtn.style.display = 'none';
+      voskTestStop.style.display = '';
+      voskTestStatus.textContent = 'Escuchando... habla ahora';
+    });
+  }
+  if (voskTestStop) {
+    voskTestStop.addEventListener('click', () => {
+      elecStop();
+      voskTestBtn.style.display = '';
+      voskTestStop.style.display = 'none';
+      voskTestStatus.textContent = 'Detenido — resultado en transcript';
+    });
+  }
+
+  // Update test status when result arrives
+  const origOnVoskResult = window.electronAPI.onVoskResult;
+  window.electronAPI.onVoskResult((data) => {
+    if (voskTestStatus) {
+      if (data.partial) voskTestStatus.textContent = '🎤 ' + data.partial;
+      if (data.final) voskTestStatus.textContent = '✓ ' + data.final;
+    }
+    if (data.partial) {
+      transcriptEl.textContent = data.partial;
+      transcriptEl.classList.add('active');
+    }
+    if (data.final && data.final.trim()) {
+      const raw = data.final.trim();
+      const corrected = correctQuery(raw);
+      transcriptEl.textContent = corrected !== raw ? '"'+raw+'" → '+corrected : corrected;
+      transcriptEl.classList.add('active');
+      searchItem(corrected);
+    }
+  });
+
+  // Hotkey sync
+  function toAcc(h) {
+    const p=[];
+    if(h.ctrl) p.push('CommandOrControl');
+    if(h.alt)  p.push('Alt');
+    if(h.shift)p.push('Shift');
+    const m={'SPACE':'Space','ENTER':'Return','ESC':'Escape','TAB':'Tab',
+      'BKSP':'Backspace','DEL':'Delete','↑':'Up','↓':'Down','←':'Left','→':'Right'};
+    p.push(m[h.label]||h.label); return p.join('+');
+  }
+  async function syncHotkey(){ await window.electronAPI.registerHotkey(toAcc(state.hotkey), state.hotkey); }
+  document.getElementById('ov-confirm').addEventListener('click', () => setTimeout(syncHotkey, 100));
+  syncHotkey();
+
+  // Check model on load
+  window.electronAPI.checkModel().then(r => {
+    if (!r.exists) {
+      // Will show modal via vosk-status event when main.js sends no-model
+    }
+  });
+}
 </script>
 </body>
 </html>
