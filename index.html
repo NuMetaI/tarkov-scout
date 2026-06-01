@@ -1022,6 +1022,18 @@ const ITEM_DICT = [
   ['RB-MP', 'Llave RB-MP'],
   ['RB-PP', 'Llave RB-PP'],
   ['RB-PS', 'Llave RB-PS'],
+  ['F-1 hand grenade', 'Granada de mano F-1'],
+  ['RGD-5 hand grenade', 'Granada de mano RGD-5'],
+  ['RGN hand grenade', 'Granada de mano RGN'],
+  ['RGO hand grenade', 'Granada de mano RGO'],
+  ['M67 hand grenade', 'Granada de mano M67'],
+  ['VOG-25 "Khattabka" hand grenade', 'Granada VOG-25 Khattabka'],
+  ['VOG-17 Khattabka improvised hand grenade', 'Granada improvisada VOG-17 Khattabka'],
+  ['V40 Mini-Grenade', 'Mini-granada V40'],
+  ['Zarya stun grenade', 'Granada aturdidora Zarya'],
+  ['Model 7290 Flash bang grenade', 'Granada cegadora Modelo 7290'],
+  ['RDG-2B smoke grenade', 'Granada de humo RDG-2B'],
+  ['M18 smoke grenade', 'Granada de humo M18'],
 ];
 
 // Build lookup maps
@@ -1343,13 +1355,13 @@ const PHONETIC_MAP=[
 [/\b(sr[\s-]?25)\b/i,'SR-25'],
 [/\b(m700|m\s?700)\b/i,'M700'],
 [/\b(svds|s\.v\.d\.s)\b/i,'SVDS'],
-[/\b(\bsvd\b|s\.v\.d)\b/i,'SVD'],
-[/\b(\brpk\b|r\.p\.k)\b/i,'RPK'],
-[/\b(\bpkm\b|p\.k\.m)\b/i,'PKM'],
+[/\b(\bsvd\b|s\.v\.d|ese\s?ve\s?de)\b/i,'SVD'],
+[/\b(\brpk\b|r\.p\.k|erre\s?pe\s?ka)\b/i,'RPK'],
+[/\b(\bpkm\b|p\.k\.m|pe\s?ka\s?eme)\b/i,'PKM'],
 [/\b(pp[\s-]?91|\bbizon\b|bi\s?zon)\b/i,'PP-91'],
 [/\b(pp[\s-]?19)\b/i,'PP-19'],
-[/\b(\bmpx\b)\b/i,'MPX'],[/\b(\bmp5\b)\b/i,'MP5'],
-[/\b(\bmp7\b)\b/i,'MP7'],[/\b(\bump\b)\b/i,'UMP'],
+[/\b(\bmpx\b|eme\s?pe\s?equis)\b/i,'MPX'],[/\b(\bmp5\b)\b/i,'MP5'],
+[/\b(\bmp7\b)\b/i,'MP7'],[/\b(\bump\b|u\s?eme\s?pe)\b/i,'UMP'],
 [/\b(\bvector\b|vextor)\b/i,'Vector'],
 [/\b(glock\s?17|gloc\s?17)\b/i,'Glock 17'],
 [/\b(glock\s?18|gloc\s?18)\b/i,'Glock 18'],
@@ -1357,13 +1369,13 @@ const PHONETIC_MAP=[
 [/\b(desert\s?eagle|deagle|águila\s?desierto)\b/i,'Desert Eagle'],
 [/\b(makarov|makaroff|macarov)\b/i,'Makarov'],
 [/\b(\bmosin\b|mosín|mosson)\b/i,'Mosin'],
-[/\b(\bsks\b)\b/i,'SKS'],
+[/\b(\bsks\b|ese\s?ka\s?ese|s\s?k\s?s)\b/i,'SKS'],
 [/\b(\brsass\b|erre\s?sass)\b/i,'RSASS'],
 [/\b(lobaev|lobaef|lobayev)\b/i,'Lobaev'],
 [/\b(orsis|orsys)\b/i,'Orsis T-5000'],
 [/\b(\bdvl\b|d\.v\.l)\b/i,'DVL-10'],
 [/\b(\bkord\b)\b/i,'Kord'],
-[/\b(\bacr\b)\b/i,'ACR'],
+[/\b(\bacr\b|a\s?ce\s?erre)\b/i,'ACR'],
 [/\b(\btt\b|tokarev)\b/i,'TT pistol'],
 [/\b(mp[\s-]?43|escopeta\s?mp43)\b/i,'MP-43'],
 [/\b(\bkedr\b)\b/i,'PP-91'],[/\b(\bklin\b)\b/i,'Klin'],
@@ -1372,10 +1384,51 @@ const PHONETIC_MAP=[
 [/\b(rsh[\s-]?12)\b/i,'RSh-12'],
 [/\b(uzi\s?pro|\buzi\b)\b/i,'UZI PRO'],
 [/\b(p90|pe\s?noventa)\b/i,'P90'],
-[/\b(\bsvu\b)\b/i,'SVU'],
+[/\b(\bsvu\b|ese\s?ve\s?u)\b/i,'SVU'],
 [/\b(vpo[\s-]?209|\bvpo\b)\b/i,'VPO-209'],
 [/\b(benelli|beneli)\b/i,'Benelli M3'],
 [/\b(ks[\s-]?23)\b/i,'KS-23M'],
+
+// ━━━ GRANADAS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Vosk lee acrónimos letra-por-letra en español: F="efe", R="erre/ere",
+// G="ge", D="de", N="ene", O="o", M="eme", V="ve/be", Z="zeta/seta"
+// Números: 1="uno", 5="cinco", 17="diecisiete", 25="veinticinco", etc.
+
+// F-1 → "efe uno","f uno","efe 1","efeuno"
+[/\b(f[\s-]?1|efe\s?uno|efe\s?1|f\s?uno|efeuno|efe\s?un|granada\s?f\s?uno|granada\s?efe)\b/i,'F-1 hand grenade'],
+
+// RGD-5 → "erre ge de cinco","rigidez cinco","erge de cinco","rige de cinco","rgd cinco"
+[/\b(rgd[\s-]?5|rgd\s?cinco|erre\s?ge\s?de\s?cinco|ere\s?ge\s?de\s?cinco|rigidez\s?cinco|rigidez|erge\s?de\s?cinco|rige\s?de\s?cinco|r\s?g\s?d\s?cinco|erre\s?ge\s?de|ere\s?ge\s?de|rgd)\b/i,'RGD-5 hand grenade'],
+
+// RGN → "erre ge ene","ergen","regen","rgn"
+[/\b(\brgn\b|erre\s?ge\s?ene|ere\s?ge\s?ene|ergen|regen|r\s?g\s?n|erre\s?ge\s?en)\b/i,'RGN hand grenade'],
+
+// RGO → "erre ge o","ergo","rego","rgo"
+[/\b(\brgo\b|erre\s?ge\s?o|ere\s?ge\s?o|\bergo\b|\brego\b|r\s?g\s?o)\b/i,'RGO hand grenade'],
+
+// M67 → "eme sesenta y siete","m 67","eme 67"
+[/\b(m[\s-]?67|eme\s?sesenta\s?y?\s?siete|eme\s?67|m\s?sesenta|granada\s?m\s?67)\b/i,'M67 hand grenade'],
+
+// VOG-25 → "vog veinticinco","bog veinticinco","boj veinticinco","vo ge 25"
+[/\b(vog[\s-]?25|vog\s?veinticinco|bog\s?veinticinco|boj\s?veinticinco|vo\s?ge\s?25|vog\s?25|bog\s?25)\b/i,'VOG-25 "Khattabka" hand grenade'],
+
+// VOG-17 → "vog diecisiete","bog diecisiete"
+[/\b(vog[\s-]?17|vog\s?diecisiete|bog\s?diecisiete|vo\s?ge\s?17|vog\s?17|bog\s?17)\b/i,'VOG-17 Khattabka improvised hand grenade'],
+
+// V40 Mini → "ve cuarenta","be cuarenta","uve cuarenta","v40 mini"
+[/\b(v40|v[\s-]?40\s?mini|ve\s?cuarenta|be\s?cuarenta|uve\s?cuarenta|v\s?cuarenta|mini\s?grenade)\b/i,'V40 Mini-Grenade'],
+
+// Zarya stun → "zaria","saria","sarya","zaria aturdidora"
+[/\b(zarya|zaria|saria|sarya|zaria\s?aturdidora|granada\s?zarya|stun\s?zarya)\b/i,'Zarya stun grenade'],
+
+// Model 7290 Flashbang → "modelo 7290","flashbang","granada cegadora"
+[/\b(model\s?7290|modelo\s?7290|m7290|flashbang|flash\s?bang|granada\s?cegadora|7290)\b/i,'Model 7290 Flash bang grenade'],
+
+// RDG-2B smoke → "erre de ge dos","rdg dos","granada de humo"
+[/\b(rdg[\s-]?2|erre\s?de\s?ge\s?dos|ere\s?de\s?ge\s?dos|rdg\s?dos|granada\s?de\s?humo|smoke\s?grenade|rdg)\b/i,'RDG-2B smoke grenade'],
+
+// M18 smoke → "eme dieciocho","m 18","humo m18"
+[/\b(m[\s-]?18|eme\s?dieciocho|m\s?18|humo\s?m18|m18\s?smoke)\b/i,'M18 smoke grenade'],
 
 // ━━━ MUNICIÓN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [/\b(igolnik|igolnick|igol\s?nik|igor\s?nik)\b/i,'Igolnik'],
