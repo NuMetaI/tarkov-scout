@@ -445,8 +445,8 @@ Haz clic en Confirmar cuando estés listo.</div>
       <button class="btn green" id="test-mic-btn">🎙 PROBAR MIC</button>
       <button class="btn red-btn" id="stop-test-btn" style="display:none">⏹ DETENER</button>
       <div id="vosk-test-section" style="display:none;margin-top:8px">
-        <div class="sidebar-section-title">TEST VOSK (DIAGNÓSTICO)</div>
-        <button class="btn gold" id="vosk-test-btn" style="margin-top:0">🎤 PROBAR VOSK</button>
+        <div class="sidebar-section-title">TEST WHISPER (DIAGNÓSTICO)</div>
+        <button class="btn gold" id="whisper-test-btn" style="margin-top:0">🎤 PROBAR WHISPER</button>
         <button class="btn red-btn" id="vosk-test-stop-btn" style="display:none;margin-top:4px">⏹ DETENER</button>
         <div id="vosk-test-status" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:6px"></div>
       </div>
@@ -2276,11 +2276,17 @@ if (window.electronAPI) {
 
   // ── VOSK RESULTS ─────────────────────────────
   window.electronAPI.onVoskResult((data) => {
-    if (data.partial) {
-      transcriptEl.textContent = data.partial;
-      transcriptEl.classList.add('active');
+    if (data.partial !== undefined) {
+      if (data.partial) {
+        transcriptEl.textContent = data.partial;
+        transcriptEl.classList.add('active');
+      } else {
+        // Empty partial = clear "Procesando..."
+        transcriptEl.textContent = '';
+        transcriptEl.classList.remove('active');
+      }
     }
-    if (data.final && data.final.trim()) {
+    if (data.final !== undefined && data.final.trim()) {
       const raw = data.final.trim();
       const corrected = correctQuery(raw);
       transcriptEl.textContent = corrected !== raw ? '"'+raw+'" → '+corrected : corrected;
@@ -2420,7 +2426,7 @@ registerProcessor('p',P);`;
 
   // ── VOSK TEST BUTTON (bypasses uiohook, tests Vosk directly) ──
   const voskTestSection = document.getElementById('vosk-test-section');
-  const voskTestBtn = document.getElementById('vosk-test-btn');
+  const voskTestBtn = document.getElementById('whisper-test-btn');
   const voskTestStop = document.getElementById('vosk-test-stop-btn');
   const voskTestStatus = document.getElementById('vosk-test-status');
 
