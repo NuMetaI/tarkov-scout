@@ -372,6 +372,31 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--display);min-
 .capture-btns .btn{width:auto}
 
 /* ── SCROLLBAR ── */
+
+
+
+/* ── VOSK DOWNLOAD MODAL ── */
+.vosk-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);
+  display:flex;align-items:center;justify-content:center;z-index:300;
+}
+.vosk-modal.hidden{display:none}
+.vosk-box{
+  background:var(--surface);border:1px solid var(--accent-dim);border-radius:12px;
+  padding:36px 44px;text-align:center;max-width:460px;width:92%;
+  box-shadow:0 24px 64px rgba(0,0,0,.7);
+}
+.vosk-box h2{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:10px}
+.vosk-box p{font-size:15px;color:var(--text);font-family:var(--mono);
+  margin-bottom:20px;line-height:1.6}
+.vosk-progress-wrap{background:var(--bg);border:1px solid var(--border-bright);
+  border-radius:4px;height:14px;overflow:hidden;margin-bottom:12px}
+.vosk-progress-bar{height:100%;width:0%;background:var(--accent);
+  border-radius:4px;transition:width .2s}
+.vosk-progress-text{font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:20px}
+.vosk-status-msg{font-family:var(--mono);font-size:14px;color:var(--text);
+  margin-bottom:16px;line-height:1.5;min-height:20px}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
 </style>
@@ -419,6 +444,12 @@ Haz clic en Confirmar cuando estés listo.</div>
       <select class="select" id="mic-select"><option>— Cargando... —</option></select>
       <button class="btn green" id="test-mic-btn">🎙 PROBAR MIC</button>
       <button class="btn red-btn" id="stop-test-btn" style="display:none">⏹ DETENER</button>
+      <div id="vosk-test-section" style="display:none;margin-top:8px">
+        <div class="sidebar-section-title">TEST VOSK (DIAGNÓSTICO)</div>
+        <button class="btn gold" id="vosk-test-btn" style="margin-top:0">🎤 PROBAR VOSK</button>
+        <button class="btn red-btn" id="vosk-test-stop-btn" style="display:none;margin-top:4px">⏹ DETENER</button>
+        <div id="vosk-test-status" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:6px"></div>
+      </div>
       <div class="mic-test-bar" id="mic-test-bar">
         <div class="vol-label" id="lbl-vol">NIVEL DE ENTRADA</div>
         <div class="vol-track"><div class="vol-fill" id="vol-fill"></div></div>
@@ -492,13 +523,48 @@ Haz clic en Confirmar cuando estés listo.</div>
     </div>
 
   </div><!-- /content -->
+
+
+<!-- VOSK DOWNLOAD MODAL -->
+<div class="vosk-modal hidden" id="vosk-modal">
+  <div class="vosk-box" style="max-width:520px">
+    <h2>🎙 MODELO DE VOZ — Whisper AI</h2>
+    <p id="vosk-modal-desc">Selecciona el modelo de reconocimiento de voz. Solo se descarga una vez.</p>
+
+    <!-- Model selection cards -->
+    <div id="model-selection" style="display:flex;gap:12px;margin:16px 0">
+      <div class="model-card" id="model-card-base" style="flex:1;border:2px solid #3a7;border-radius:10px;padding:14px;cursor:pointer;background:rgba(50,200,120,0.08);text-align:center;transition:all .2s">
+        <div style="font-size:20px;font-weight:700;color:#3a7">⚡ BASE</div>
+        <div style="font-size:13px;color:#aaa;margin:6px 0">148 MB de descarga</div>
+        <div style="font-size:12px;color:#8cf">~500 MB RAM</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Rápido • Precisión buena</div>
+        <div style="font-size:11px;color:#888">Ideal si tienes 8-16 GB RAM</div>
+        <div style="font-size:10px;color:#5a5;margin-top:6px">✓ RECOMENDADO</div>
+      </div>
+      <div class="model-card" id="model-card-small" style="flex:1;border:2px solid #555;border-radius:10px;padding:14px;cursor:pointer;background:rgba(100,100,100,0.08);text-align:center;transition:all .2s">
+        <div style="font-size:20px;font-weight:700;color:#8af">🔬 SMALL</div>
+        <div style="font-size:13px;color:#aaa;margin:6px 0">488 MB de descarga</div>
+        <div style="font-size:12px;color:#f88">~1.5 GB RAM</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Más lento • Precisión superior</div>
+        <div style="font-size:11px;color:#888">Requiere 16+ GB RAM</div>
+        <div style="font-size:10px;color:#aaa;margin-top:6px">Para PCs potentes</div>
+      </div>
+    </div>
+
+    <div class="vosk-progress-wrap" id="vosk-progress-wrap" style="display:none">
+      <div class="vosk-progress-bar" id="vosk-progress-bar"></div>
+    </div>
+    <div class="vosk-progress-text" id="vosk-progress-text"></div>
+    <div class="vosk-status-msg" id="vosk-status-msg"></div>
+    <button class="vosk-dl-btn" id="vosk-download-btn" style="display:none">⬇ DESCARGAR</button>
+    <button class="vosk-cancel-btn" id="vosk-cancel-btn">✕ CERRAR</button>
+  </div>
+</div>
 </div><!-- /main -->
 </div><!-- /layout -->
 
 <script>
-console.log('%c[TARKOV SCOUT v2.3 — GitHub Pages]', 'color:#c8a84b;font-size:16px;font-weight:bold');
-
-console.log('%c[TARKOV SCOUT v2.1 LOADED]', 'color:#c8a84b;font-size:16px;font-weight:bold');
+console.log('%c[TARKOV SCOUT v3.0 — Desktop App (Whisper AI)]', 'color:#c8a84b;font-size:16px;font-weight:bold');
 // ── I18N ─────────────────────────────────────
 const STRINGS = {
   es: {
@@ -602,8 +668,8 @@ const state = {
     : {code:'Space',label:'SPACE',ctrl:false,alt:false,shift:false},
   selectedDeviceId: null,
   micReady: false,   // true once getUserMedia granted
-  lastQuery: '',     // re-run search on PVP/PVE switch
-  lastResults: null,  // re-render on language change
+  lastQuery: '',     // last searched item — re-run when switching PVP/PVE
+  lastResults: null,  // last API results — re-render when language changes
 };
 
 // ── STATUS ────────────────────────────────────
@@ -638,6 +704,7 @@ function applyLang(){
   if(!state.listening) hb.textContent=t('holdBtn');
   if(!state.listening&&!state.loading) setStatus('idle',t('statusReady'));
   if(typeof syncHotkeyBadge==='function') syncHotkeyBadge();
+  // Re-render results with new language labels
   if(state && state.lastResults && state.lastResults.length>0) renderResults(state.lastResults);
 }
 document.getElementById('lang-btn').addEventListener('click',()=>{
@@ -1731,30 +1798,45 @@ const captureKeyDisplay=document.getElementById('capture-key-display');
 document.addEventListener('keydown',e=>{
   if(captureMode){
     e.preventDefault();
-    const ignore=['Control','Alt','Shift','Meta','OS'];
+    const ignore=['Control','Alt','Shift','Meta','OS','Dead','Unidentified','Process'];
     if(ignore.includes(e.key)) return;
-    const km={' ':'SPACE',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Enter:'ENTER',Escape:'ESC',Tab:'TAB',Backspace:'BKSP',Delete:'DEL'};
-    const label=km[e.key]||(e.key.length===1?e.key.toUpperCase():e.key);
+    const km={
+      ' ':'SPACE',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',
+      Enter:'ENTER',Escape:'ESC',Tab:'TAB',Backspace:'BKSP',Delete:'DEL',
+      Insert:'INS',Home:'HOME',End:'END',PageUp:'PGUP',PageDown:'PGDN',
+      F1:'F1',F2:'F2',F3:'F3',F4:'F4',F5:'F5',F6:'F6',
+      F7:'F7',F8:'F8',F9:'F9',F10:'F10',F11:'F11',F12:'F12',
+    };
+    // Get label: use km map, or uppercase for single chars, or e.code as fallback
+    let label = km[e.key];
+    if(!label){
+      if(e.key.length===1) label = e.key.toUpperCase();
+      else label = e.code.replace('Key','').replace('Digit','').replace('Numpad','NUM') || e.key;
+    }
+    if(!label || label==='UNIDENTIFIED') return; // skip unknown keys
     capturedPending={code:e.code,label,ctrl:!!e.ctrlKey,alt:!!e.altKey,shift:!!e.shiftKey&&e.key!=='Shift'};
     captureKeyDisplay.textContent=hotkeyLabel(capturedPending);
     return;
   }
   const tgt=e.target.tagName;
-  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
+  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||tgt==='BUTTON') return;
   const h=state.hotkey;
   const match=e.code===h.code&&!!e.ctrlKey===h.ctrl&&!!e.altKey===h.alt&&!!e.shiftKey===h.shift&&!e.repeat;
   console.log('[KEY] keydown code='+e.code+' target='+tgt+' match='+match+' repeat='+e.repeat+' listening='+state.listening);
   if(match){
     e.preventDefault();
+    // In Electron, hotkey is handled by uiohook via IPC — skip Web Speech
+    if(window.electronAPI) return;
     startListening().catch(err=>console.error('[KEY] startListening error:',err));
   }
 });
 document.addEventListener('keyup',e=>{
   if(captureMode) return;
   const tgt=e.target.tagName;
-  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
+  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||tgt==='BUTTON') return;
   if(e.code===state.hotkey.code){
     console.log('[KEY] keyup hotkey released, calling stopListening');
+    if(window.electronAPI) return; // Electron handles this via uiohook
     stopListening();
   }
 });
@@ -1870,9 +1952,13 @@ function formatPrice(n){
 }
 
 async function searchItem(rawQuery){
+  // correctQuery: converts phonetic/spanish speech → item name
   let query=correctQuery(rawQuery.trim());
   if(!query||query.length<2) return;
-  const apiQuery=(typeof translateToEN==='function')?translateToEN(query):query;
+
+  // translateToEN: if user said Spanish item name, get English API name
+  const apiQuery = (typeof translateToEN==='function') ? translateToEN(query) : query;
+  // Store the display query (may be Spanish), but search with English
   state.lastQuery = query;
 
   if(query.toLowerCase()!==rawQuery.trim().toLowerCase()){
@@ -2016,10 +2102,12 @@ applyLang();
 applyServerMode();
 document.getElementById('hotkey-display').textContent=hotkeyLabel(state.hotkey);
 
-if(SpeechRecognitionAPI){
-  // Request the mic ONCE on app open and keep that stream alive.
-  // A persistent active stream is what lets Edge/Opera reuse the grant for
-  // both the mic test and the hotkey recognizer without prompting again.
+if(window.electronAPI){
+  // Electron: skip Web Speech API init entirely — Vosk handles voice
+  // Status set by vosk-status events from main process
+  setStatus('idle',t('statusReady'));
+}else if(SpeechRecognitionAPI){
+  // Browser: use Web Speech API with persistent mic stream
   setStatus('loading',t('initMic'));
   ensureMic().then(ok=>{
     if(ok){ setStatus('ok',t('micReady')); setTimeout(()=>setStatus('idle',t('statusReady')),1200); }
@@ -2063,6 +2151,362 @@ function syncHotkeyBadge(){
 
 // Update badge when hotkey is confirmed
 document.getElementById('ov-confirm').addEventListener('click', syncHotkeyBadge);
+
+
+
+
+
+
+
+// ── ELECTRON: VOSK + HOLD-TO-TALK ────────────
+if (window.electronAPI) {
+  const transcriptEl = document.getElementById('transcript-text');
+  const holdBtn      = document.getElementById('hold-btn');
+  const dotEl        = document.getElementById('dot');
+  const statusEl     = document.getElementById('status-text');
+
+  let elecDown   = false;
+  let modelReady = false;
+  let audioStarting = false; // prevent concurrent starts
+
+  // ── VOSK DOWNLOAD MODAL ──────────────────────
+  const modal        = document.getElementById('vosk-modal');
+  const modalDesc    = document.getElementById('vosk-modal-desc');
+  const progressWrap = document.getElementById('vosk-progress-wrap');
+  const progressBar  = document.getElementById('vosk-progress-bar');
+  const progressText = document.getElementById('vosk-progress-text');
+  const statusMsg    = document.getElementById('vosk-status-msg');
+  const dlBtn        = document.getElementById('vosk-download-btn');
+  const cancelBtn    = document.getElementById('vosk-cancel-btn');
+
+  function showModal(){ modal.classList.remove('hidden'); }
+  function hideModal(){ modal.classList.add('hidden'); }
+
+  cancelBtn.addEventListener('click', hideModal);
+  // Model selection logic
+  let selectedModel = 'ggml-base.bin'; // default
+  const cardBase  = document.getElementById('model-card-base');
+  const cardSmall = document.getElementById('model-card-small');
+  const modelSelection = document.getElementById('model-selection');
+
+  function selectModelCard(model) {
+    selectedModel = model;
+    if (model === 'ggml-base.bin') {
+      cardBase.style.borderColor  = '#3a7';
+      cardBase.style.background   = 'rgba(50,200,120,0.08)';
+      cardSmall.style.borderColor = '#555';
+      cardSmall.style.background  = 'rgba(100,100,100,0.08)';
+    } else {
+      cardSmall.style.borderColor = '#8af';
+      cardSmall.style.background  = 'rgba(100,130,255,0.08)';
+      cardBase.style.borderColor  = '#555';
+      cardBase.style.background   = 'rgba(100,100,100,0.08)';
+    }
+    dlBtn.style.display = '';
+    dlBtn.disabled = false;
+    dlBtn.textContent = '⬇ DESCARGAR ' + (model === 'ggml-base.bin' ? 'BASE (148 MB)' : 'SMALL (488 MB)');
+  }
+
+  cardBase.addEventListener('click', () => selectModelCard('ggml-base.bin'));
+  cardSmall.addEventListener('click', () => selectModelCard('ggml-small.bin'));
+  selectModelCard('ggml-base.bin'); // select default
+
+  dlBtn.addEventListener('click', () => {
+    dlBtn.disabled = true;
+    dlBtn.textContent = '⏳ DESCARGANDO...';
+    modelSelection.style.display = 'none';
+    progressWrap.style.display = 'block';
+    progressText.textContent = 'Conectando...';
+    statusMsg.textContent = '';
+    window.electronAPI.voskDownloadModel(selectedModel);
+  });
+
+  window.electronAPI.onVoskDownload((data) => {
+    if (data.status === 'start') {
+      statusMsg.textContent = data.message;
+    } else if (data.status === 'downloading') {
+      progressBar.style.width = data.pct + '%';
+      progressText.textContent = data.mb + ' MB / ' + data.mbT + ' MB (' + data.pct + '%)';
+    } else if (data.status === 'extracting') {
+      progressBar.style.width = '100%';
+      progressText.textContent = '';
+      statusMsg.textContent = '⚙ ' + data.message;
+      dlBtn.textContent = '⚙ INSTALANDO...';
+    } else if (data.status === 'done') {
+      statusMsg.textContent = '✓ ' + data.message;
+      dlBtn.textContent = '⏳ Inicializando...';
+      dlBtn.disabled = true;
+      // Modal stays open until vosk-status 'ready' fires (which calls hideModal)
+    } else if (data.status === 'error') {
+      statusMsg.textContent = '✗ Error: ' + data.message;
+      dlBtn.disabled = false;
+      dlBtn.textContent = '↺ REINTENTAR';
+    }
+  });
+
+  // ── VOSK STATUS ──────────────────────────────
+  window.electronAPI.onVoskStatus((data) => {
+    if (data.status === 'ready') {
+      modelReady = true;
+      dotEl.className = 'dot ok';
+      statusEl.textContent = t('statusReady');
+      hideModal();
+    } else if (data.status === 'no-model') {
+      modelReady = false;
+      modalDesc.textContent = lang === 'es'
+        ? 'Selecciona el modelo de reconocimiento de voz. Solo se descarga una vez.'
+        : 'Select the voice recognition model. Only downloaded once.';
+      if (modelSelection) modelSelection.style.display = 'flex';
+      dlBtn.style.display = '';
+      showModal();
+    } else if (data.status === 'error') {
+      dotEl.className = 'dot error';
+      statusEl.textContent = '⚠ Error Vosk: ' + data.message;
+      window.electronAPI.readLog().then(log => {
+        modalDesc.textContent = 'Error al inicializar:';
+        dlBtn.style.display = 'none';
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'font-size:11px;color:#e05050;text-align:left;max-height:180px;overflow-y:auto;background:#000;padding:8px;border-radius:4px;white-space:pre-wrap;margin-bottom:12px';
+        pre.textContent = data.message + '\n\n' + log;
+        statusMsg.innerHTML = ''; statusMsg.appendChild(pre);
+        showModal();
+      }).catch(()=>{});
+    }
+  });
+
+  // ── VOSK RESULTS ─────────────────────────────
+  window.electronAPI.onVoskResult((data) => {
+    if (data.partial) {
+      transcriptEl.textContent = data.partial;
+      transcriptEl.classList.add('active');
+    }
+    if (data.final && data.final.trim()) {
+      const raw = data.final.trim();
+      const corrected = correctQuery(raw);
+      transcriptEl.textContent = corrected !== raw ? '"'+raw+'" → '+corrected : corrected;
+      transcriptEl.classList.add('active');
+      searchItem(corrected);
+    }
+  });
+
+  // ── VOSK LISTENING STATE ──────────────────────
+  window.electronAPI.onVoskListening((active) => {
+    if (active) {
+      dotEl.className = 'dot listening';
+      statusEl.textContent = lang==='es' ? 'Escuchando... habla ahora' : 'Listening... speak now';
+      holdBtn.classList.add('active');
+      holdBtn.textContent = t('holdActive');
+    } else {
+      dotEl.className = modelReady ? 'dot ok' : 'dot';
+      if (!state.loading) statusEl.textContent = t('statusReady');
+      holdBtn.classList.remove('active');
+      holdBtn.textContent = t('holdBtn');
+    }
+  });
+
+  // ── WEB AUDIO CAPTURE → VOSK ─────────────────
+  let audioCtx = null;
+  let audioStream = null;
+  let audioProcessor = null;
+
+  async function elecStart() {
+    if (elecDown || audioStarting) return;
+    if (!modelReady) { showModal(); return; }
+    elecDown = true;
+    audioStarting = true;
+    transcriptEl.textContent = ''; transcriptEl.classList.add('active');
+
+    // Tell main to start Vosk listening state
+    window.electronAPI.voskStart();
+
+    // Capture mic using MediaRecorder — no CSP issues, works reliably in Electron
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: {
+        channelCount: 1,
+        echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+      }});
+
+      // Use MediaRecorder to get raw PCM via Web Audio API analyser
+      // but send chunks via a ScriptProcessor-free method:
+      // Create AudioContext at 16kHz, use a periodic flush approach
+      audioCtx = new AudioContext({ sampleRate: 16000 });
+      const source = audioCtx.createMediaStreamSource(audioStream);
+
+      // Buffer accumulator
+      let pcmBuffer = [];
+      const CHUNK_SIZE = 4096; // samples per chunk to vosk
+
+      // Use AudioWorklet via data: URI to avoid CSP blob: restriction
+      const workletSrc = `
+class P extends AudioWorkletProcessor{
+  process(i){
+    const d=i[0][0];
+    if(!d)return true;
+    const b=new Int16Array(d.length);
+    for(let k=0;k<d.length;k++){const s=Math.max(-1,Math.min(1,d[k]));b[k]=s<0?s*32768:s*32767;}
+    this.port.postMessage(b.buffer,[b.buffer]);
+    return true;
+  }
+}
+registerProcessor('p',P);`;
+
+      let workletLoaded = false;
+      try {
+        // Try data: URI first (Electron 28 supports it)
+        const dataUrl = 'data:application/javascript;base64,' + btoa(workletSrc);
+        await audioCtx.audioWorklet.addModule(dataUrl);
+        audioProcessor = new AudioWorkletNode(audioCtx, 'p');
+        audioProcessor.port.onmessage = (ev) => {
+          if (!elecDown) return;
+          window.electronAPI.sendAudioChunk(ev.data);
+        };
+        source.connect(audioProcessor);
+        workletLoaded = true;
+        console.log('[AUDIO] Capture started via AudioWorklet data: URI');
+      } catch(workletErr) {
+        console.warn('[AUDIO] AudioWorklet failed:', workletErr.message, '— falling back to onaudioprocess');
+      }
+
+      if (!workletLoaded) {
+        // Fallback: deprecated ScriptProcessor but with error suppression
+        // This won't crash in Electron 28 if we handle it carefully
+        audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+        audioProcessor.onaudioprocess = (ev) => {
+          if (!elecDown) return;
+          const f = ev.inputBuffer.getChannelData(0);
+          const b = new Int16Array(f.length);
+          for(let k=0;k<f.length;k++){const s=Math.max(-1,Math.min(1,f[k]));b[k]=s<0?s*32768:s*32767;}
+          window.electronAPI.sendAudioChunk(b.buffer);
+        };
+        source.connect(audioProcessor);
+        audioProcessor.connect(audioCtx.destination);
+        console.log('[AUDIO] Capture started via ScriptProcessor (fallback)');
+      }
+
+      audioStarting = false;
+      if (!state.micReady) { state.micReady=true; enumerateMics().catch(()=>{}); }
+    } catch(e) {
+      console.error('[AUDIO] Mic error:', e.message, e.name);
+      elecDown = false;
+      audioStarting = false;
+      return;
+    }
+  }
+
+  function elecStop() {
+    if (!elecDown) return;
+    elecDown = false;
+    audioStarting = false;
+    // Stop audio capture
+    if (audioProcessor) { audioProcessor.disconnect(); audioProcessor = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+    // Tell main to finalize and get last result
+    window.electronAPI.voskStop();
+  }
+
+  // Override hold button
+  const hb = holdBtn.cloneNode(true);
+  holdBtn.parentNode.replaceChild(hb, holdBtn);
+  hb.addEventListener('mousedown',  e => { e.preventDefault(); elecStart(); });
+  hb.addEventListener('mouseup',    () => elecStop());
+  hb.addEventListener('mouseleave', () => elecStop());
+  hb.addEventListener('touchstart', e => { e.preventDefault(); elecStart(); }, {passive:false});
+  hb.addEventListener('touchend',   () => elecStop());
+
+  // Global hotkey
+  window.electronAPI.onHotkeyDown(() => elecStart());
+  window.electronAPI.onHotkeyUp(()   => elecStop());
+
+  // ── VOSK TEST BUTTON (bypasses uiohook, tests Vosk directly) ──
+  const voskTestSection = document.getElementById('vosk-test-section');
+  const voskTestBtn = document.getElementById('vosk-test-btn');
+  const voskTestStop = document.getElementById('vosk-test-stop-btn');
+  const voskTestStatus = document.getElementById('vosk-test-status');
+
+  if (voskTestSection) voskTestSection.style.display = 'block';
+
+  if (voskTestBtn) {
+    voskTestBtn.addEventListener('mousedown', async (e) => {
+      e.preventDefault();
+      voskTestStatus.textContent = 'Iniciando...';
+      await elecStart();
+      voskTestBtn.style.display = 'none';
+      voskTestStop.style.display = '';
+      voskTestStatus.textContent = 'Escuchando... habla ahora';
+    });
+  }
+  if (voskTestStop) {
+    voskTestStop.addEventListener('click', () => {
+      elecStop();
+      voskTestBtn.style.display = '';
+      voskTestStop.style.display = 'none';
+      voskTestStatus.textContent = 'Detenido — resultado en transcript';
+    });
+  }
+
+  // Update test status when result arrives
+  const origOnVoskResult = window.electronAPI.onVoskResult;
+  window.electronAPI.onVoskResult((data) => {
+    if (voskTestStatus) {
+      if (data.partial) voskTestStatus.textContent = '🎤 ' + data.partial;
+      if (data.final) voskTestStatus.textContent = '✓ ' + data.final;
+    }
+    if (data.partial) {
+      transcriptEl.textContent = data.partial;
+      transcriptEl.classList.add('active');
+    }
+    if (data.final && data.final.trim()) {
+      const raw = data.final.trim();
+      const corrected = correctQuery(raw);
+      transcriptEl.textContent = corrected !== raw ? '"'+raw+'" → '+corrected : corrected;
+      transcriptEl.classList.add('active');
+      searchItem(corrected);
+    }
+  });
+
+  // Hotkey sync
+  function toAcc(h) {
+    const p=[];
+    if(h.ctrl) p.push('CommandOrControl');
+    if(h.alt)  p.push('Alt');
+    if(h.shift)p.push('Shift');
+    const m={'SPACE':'Space','ENTER':'Return','ESC':'Escape','TAB':'Tab',
+      'BKSP':'Backspace','DEL':'Delete','INS':'Insert','HOME':'Home','END':'End',
+      'PGUP':'PageUp','PGDN':'PageDown','↑':'Up','↓':'Down','←':'Left','→':'Right',
+      'F1':'F1','F2':'F2','F3':'F3','F4':'F4','F5':'F5','F6':'F6',
+      'F7':'F7','F8':'F8','F9':'F9','F10':'F10','F11':'F11','F12':'F12'};
+    p.push(m[h.label]||h.label); return p.join('+');
+  }
+  async function syncHotkey(){ await window.electronAPI.registerHotkey(toAcc(state.hotkey), state.hotkey); }
+  document.getElementById('ov-confirm').addEventListener('click', () => setTimeout(syncHotkey, 100));
+  syncHotkey();
+
+  // Poll vosk status on load (fixes race condition where ready fires before renderer)
+  window.electronAPI.getVoskStatus().then(status => {
+    console.log('[ELECTRON] Initial vosk status:', status);
+    if (status && status.status) {
+      // Trigger the same handler as the IPC event
+      if (status.status === 'ready') {
+        modelReady = true;
+        dotEl.className = 'dot ok';
+        statusEl.textContent = t('statusReady');
+        hideModal();
+      } else if (status.status === 'no-model') {
+        modelReady = false;
+        dotEl.className = 'dot error';
+        statusEl.textContent = lang==='es' ? '⚠ Modelo de voz no instalado' : '⚠ Voice model not installed';
+        if (modelSelection) modelSelection.style.display = 'flex';
+        dlBtn.style.display = '';
+        dlBtn.disabled = false;
+        showModal();
+      } else if (status.status === 'loading') {
+        // Still initializing — wait for the push event
+        statusEl.textContent = lang==='es' ? 'Inicializando Vosk...' : 'Initializing Vosk...';
+      }
+    }
+  }).catch(e => console.warn('[ELECTRON] getVoskStatus error:', e));
+}
 </script>
 </body>
 </html>
