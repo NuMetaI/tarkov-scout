@@ -527,41 +527,87 @@ Haz clic en Confirmar cuando estés listo.</div>
 
 <!-- VOSK DOWNLOAD MODAL -->
 <div class="vosk-modal hidden" id="vosk-modal">
-  <div class="vosk-box" style="max-width:520px">
-    <h2>🎙 MODELO DE VOZ — Whisper AI</h2>
+  <div class="vosk-box" style="max-width:760px;padding:30px 36px">
+    <h2 style="font-size:22px;margin-bottom:12px">🎙 MODELO DE VOZ — Whisper AI</h2>
     <p id="vosk-modal-desc">Selecciona el modelo de reconocimiento de voz. Solo se descarga una vez.</p>
 
     <!-- Model selection cards -->
     <div id="model-selection" style="display:flex;gap:12px;margin:16px 0">
-      <div class="model-card" id="model-card-base" style="flex:1;border:2px solid #3a7;border-radius:10px;padding:14px;cursor:pointer;background:rgba(50,200,120,0.08);text-align:center;transition:all .2s">
-        <div style="font-size:20px;font-weight:700;color:#3a7">⚡ BASE</div>
-        <div style="font-size:13px;color:#aaa;margin:6px 0">148 MB de descarga</div>
-        <div style="font-size:12px;color:#8cf">~500 MB RAM</div>
-        <div style="font-size:11px;color:#888;margin-top:6px">Rápido • Precisión buena</div>
-        <div style="font-size:11px;color:#888">Ideal si tienes 8-16 GB RAM</div>
-        <div style="font-size:10px;color:#5a5;margin-top:6px">✓ RECOMENDADO</div>
+      <div class="model-card" id="vosk-progress-wrap{background:var(--bg);border:1px solid var(--border-bright);
+  border-radius:4px;height:14px;overflow:hidden;margin-bottom:12px}
+.vosk-progress-bar{height:100%;width:0%;background:var(--accent);
+  border-radius:4px;transition:width .2s}
+.vosk-progress-text{font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:20px}
+.vosk-status-msg{font-family:var(--mono);font-size:14px;color:var(--text);
+  margin-bottom:16px;line-height:1.5;min-height:20px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- CAPTURE OVERLAY -->
+<div class="overlay hidden" id="overlay">
+  <div class="capture-box">
+    <div class="capture-title" id="ov-title">CONFIGURAR HOTKEY</div>
+    <div class="capture-sub" id="ov-sub">Presiona la tecla o combinación que quieres usar.
+Haz clic en Confirmar cuando estés listo.</div>
+    <div class="capture-key" id="capture-key-display">—</div>
+    <div class="capture-btns">
+      <button class="btn gold" id="ov-confirm">✓ CONFIRMAR</button>
+      <button class="btn" id="ov-cancel">✕ CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title" id="sb-title">CONFIGURACIÓN</span>
+    <button class="sidebar-close" id="sidebar-close">✕</button>
+  </div>
+  <div class="sidebar-body">
+
+    <!-- HOTKEY SECTION -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title" id="lbl-hotkey">HOTKEY ACTIVA</div>
+      <div class="hotkey-display-row">
+        <div class="hotkey-display" id="hotkey-display">SPACE</div>
       </div>
-      <div class="model-card" id="model-card-small" style="flex:1;border:2px solid #555;border-radius:10px;padding:14px;cursor:pointer;background:rgba(100,100,100,0.08);text-align:center;transition:all .2s">
-        <div style="font-size:20px;font-weight:700;color:#8af">🔬 SMALL</div>
-        <div style="font-size:13px;color:#aaa;margin:6px 0">488 MB de descarga</div>
-        <div style="font-size:12px;color:#f88">~1.5 GB RAM</div>
-        <div style="font-size:11px;color:#888;margin-top:6px">Más lento • Precisión superior</div>
-        <div style="font-size:11px;color:#888">Requiere 16+ GB RAM</div>
-        <div style="font-size:10px;color:#aaa;margin-top:6px">Para PCs potentes</div>
+      <button class="btn gold" id="set-hotkey-btn">⌨ CAMBIAR HOTKEY</button>
+      <div class="hotkey-hint" id="hotkey-hint">Mantén presionada para escuchar</div>
+    </div>
+
+    <!-- MIC SECTION -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title" id="lbl-mic">MICRÓFONO</div>
+      <select class="select" id="mic-select"><option>— Cargando... —</option></select>
+      <button class="btn green" id="test-mic-btn">🎙 PROBAR MIC</button>
+      <button class="btn red-btn" id="stop-test-btn" style="display:none">⏹ DETENER</button>
+      <div id="vosk-test-section" style="display:none;margin-top:8px">
+        <div class="sidebar-section-title">TEST WHISPER (DIAGNÓSTICO)</div>
+        <button class="btn gold" id="whisper-test-btn" style="margin-top:0">🎤 PROBAR WHISPER</button>
+        <button class="btn red-btn" id="vosk-test-stop-btn" style="display:none;margin-top:4px">⏹ DETENER</button>
+        <div id="vosk-test-status" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:6px"></div>
+      </div>
+      <div class="mic-test-bar" id="mic-test-bar">
+        <div class="vol-label" id="lbl-vol">NIVEL DE ENTRADA</div>
+        <div class="vol-track"><div class="vol-fill" id="vol-fill"></div></div>
       </div>
     </div>
 
-    <div class="vosk-progress-wrap" id="vosk-progress-wrap" style="display:none">
-      <div class="vosk-progress-bar" id="vosk-progress-bar"></div>
-    </div>
-    <div class="vosk-progress-text" id="vosk-progress-text"></div>
-    <div class="vosk-status-msg" id="vosk-status-msg"></div>
-    <button class="vosk-dl-btn" id="vosk-download-btn" style="display:none">⬇ DESCARGAR</button>
-    <button class="vosk-cancel-btn" id="vosk-cancel-btn">✕ CERRAR</button>
   </div>
 </div>
-</div><!-- /main -->
-</div><!-- /layout -->
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
 
 <script>
 console.log('%c[TARKOV SCOUT v3.0 — Desktop App (Whisper AI)]', 'color:#c8a84b;font-size:16px;font-weight:bold');
@@ -1101,6 +1147,55 @@ const ITEM_DICT = [
   ['Model 7290 Flash bang grenade', 'Granada cegadora Modelo 7290'],
   ['RDG-2B smoke grenade', 'Granada de humo RDG-2B'],
   ['M18 smoke grenade', 'Granada de humo M18'],
+  ['Pack of screws', 'Paquete de tornillos'],
+  ['Screw nut', 'Tuerca de tornillo'],
+  ['Phase control relay', 'Relé de control de fase'],
+  ['T-Shaped plug', 'Enchufe en T'],
+  ['Powercord', 'Cable de poder'],
+  ['Car battery', 'Batería de auto'],
+  ['Radiator helix', 'Hélice de radiador'],
+  ['Metal spare parts', 'Repuestos de metal'],
+  ['Construction measuring tape', 'Cinta métrica de construcción'],
+  ['Leatherman multitool', 'Multiherramienta Leatherman'],
+  ['Hand drill', 'Taladro de mano'],
+  ['Elite pliers', 'Alicates de élite'],
+  ['Secure Flash drive', 'Memoria USB segura'],
+  ['Working LCD', 'Pantalla LCD funcional'],
+  ['FireKlean gun lube', 'Lubricante de arma FireKlean'],
+  ['Xenomorph sealing foam', 'Espuma selladora Xenomorph'],
+  ['Shustrilo sealing foam', 'Espuma selladora Shustrilo'],
+  ['Tube of Poxeram cold welding', 'Tubo de soldadura en frío Poxeram'],
+  ['Heat-exchange alkali surface washer', 'Limpiador alcalino de intercambio'],
+  ['Fuel conditioner', 'Acondicionador de combustible'],
+  ['Expeditionary fuel tank', 'Tanque de combustible expedicionario'],
+  ['Coffee Majaica', 'Café Majaica'],
+  ['Sodium bicarbonate', 'Bicarbonato de sodio'],
+  ['SAS drive', 'Unidad SAS'],
+  ['USB Adapter', 'Adaptador USB'],
+  ['Topographic survey maps', 'Mapas topográficos'],
+  ['Lab. journal', 'Diario de laboratorio'],
+  ['Battered antique book', 'Libro antiguo'],
+  ['Photo album', 'Álbum de fotos'],
+  ['Diary', 'Diario personal'],
+  ['Lucky coin', 'Moneda de la suerte'],
+  ['Body armor repair kit', 'Kit de reparación de armadura'],
+  ['Weapon repair kit', 'Kit de reparación de arma'],
+  ['Cigarette lighter', 'Encendedor'],
+  ['Matches', 'Fósforos'],
+  ['Can of thermite', 'Lata de termita'],
+  ['Metal scissors', 'Tijeras de metal'],
+  ['Soap', 'Jabón'],
+  ['Toothpaste', 'Pasta dental'],
+  ['Toilet paper', 'Papel higiénico'],
+  ['Paid AntiRoach spray', 'Spray anti-cucarachas'],
+  ['Shampoo', 'Champú'],
+  ['Bleach', 'Lejía'],
+  ['Repellent', 'Repelente de insectos'],
+  ['Secure container Alpha', 'Contenedor seguro Alpha'],
+  ['Wilston cigarettes', 'Cigarrillos Wilston'],
+  ['Marlboro cigarettes', 'Cigarrillos Marlboro'],
+  ['Apollo Soyuz cigarettes', 'Cigarrillos Apollo Soyuz'],
+  ['Strike cigarettes', 'Cigarrillos Strike'],
 ];
 
 // Build lookup maps
@@ -1511,6 +1606,104 @@ const PHONETIC_MAP=[
 [/\b(pfm[\s-]?1|pe\s?efe\s?eme)\b/i,'PFM-1'],
 [/\b(magnum\s?buckshot|magnum\s?perdigones)\b/i,'Magnum buckshot'],
 [/\b(sz[\s-]?1)\b/i,'SZ-1'],
+
+// ━━━ ITEMS FALTANTES — HIDEOUT / BARTER / MISC ━━━━━━━━━━━━━━━━━━━━━━━━━
+// Pack of screws — ES: "tornillos","paquete de tornillos"
+[/\b(pack\s?of\s?screws|screws|tornillos|tornillo|paquete\s?de\s?tornillos|autorroscantes|tornillos\s?autorroscantes)\b/i,'Pack of screws'],
+// Screw nut — ES: "tuerca","tuercas de tornillo"
+[/\b(screw\s?nut|screw\s?nuts|tuerca\s?de\s?tornillo|tuercas\s?de\s?tornillo|nut\s?screw)\b/i,'Screw nut'],
+// Phase control relay — ES: "relé de control","relé","relay"
+[/\b(phase\s?control\s?relay|relay|rel[eé]|rel[eé]\s?de\s?control|rel[eé]\s?de\s?fase|relevador)\b/i,'Phase control relay'],
+// T-Shaped plug — ES: "enchufe en T","enchufe tipo T","te plug"
+[/\b(t[\s-]?shaped\s?plug|enchufe\s?en\s?t|enchufe\s?tipo\s?t|te\s?plug|clavija\s?en\s?t|t\s?plug)\b/i,'T-Shaped plug'],
+// Powercord — ES: "cable de poder","cable eléctrico","cordón eléctrico"
+[/\b(powercord|power\s?cord|cable\s?de\s?poder|cable\s?eléctrico|cord[oó]n\s?el[eé]ctrico|cable\s?de\s?corriente)\b/i,'Powercord'],
+// Car battery — ES: "batería de auto","batería de carro","batería de coche"
+[/\b(car\s?battery|bater[ií]a\s?de\s?auto|bater[ií]a\s?de\s?carro|bater[ií]a\s?de\s?coche|bater[ií]a\s?automotriz|car\s?bat)\b/i,'Car battery'],
+// Radiator helix — ES: "hélice de radiador","serpentín"
+[/\b(radiator\s?helix|h[eé]lice\s?de\s?radiador|serpent[ií]n|helix\s?radiador|radiator\s?coil)\b/i,'Radiator helix'],
+// Metal spare parts — ES: "repuestos de metal","piezas metálicas"
+[/\b(metal\s?spare\s?parts|spare\s?parts|repuestos\s?de\s?metal|piezas\s?met[aá]licas|piezas\s?de\s?repuesto|repuestos\s?met[aá]licos)\b/i,'Metal spare parts'],
+// Construction measuring tape — ES: "cinta métrica","metro","cinta de medir"
+[/\b(measuring\s?tape|construction\s?measuring|cinta\s?m[eé]trica|metro\s?de\s?construcci[oó]n|cinta\s?de\s?medir|metro\s?de\s?medir|flex[oó]metro)\b/i,'Construction measuring tape'],
+// Leatherman multitool — ES: "multiherramienta","leatherman","navaja multiusos"
+[/\b(leatherman|multiherramienta|multitool|multi\s?tool|navaja\s?multiusos|herramienta\s?multiusos|letherman)\b/i,'Leatherman multitool'],
+// Hand drill — ES: "taladro de mano","taladro manual","berbiquí"
+[/\b(hand\s?drill|taladro\s?de\s?mano|taladro\s?manual|berbiq[uú][ií]|hand\s?dril)\b/i,'Hand drill'],
+// Elite pliers — ES: "alicates de élite","alicates élite","pinzas élite"
+[/\b(elite\s?pliers|alicates\s?de?\s?[eé]lite|pinzas\s?[eé]lite|pliers\s?elite)\b/i,'Elite pliers'],
+// Secure Flash drive — ES: "memoria USB","pendrive","USB seguro","flash drive"
+[/\b(secure\s?flash\s?drive|flash\s?drive|memoria\s?usb|pendrive|pen\s?drive|usb\s?seguro|unidad\s?flash|llave\s?usb)\b/i,'Secure Flash drive'],
+// Working LCD — ES: "pantalla LCD","LCD funcional","monitor LCD"
+[/\b(working\s?lcd|lcd\s?funcional|pantalla\s?lcd\s?funcional|monitor\s?lcd|lcd\s?bueno|lcd\s?working)\b/i,'Working LCD'],
+// FireKlean gun lube — ES: "lubricante de arma","aceite para armas"
+[/\b(fireklean|fire\s?klean|gun\s?lube|lubricante\s?de\s?arma|aceite\s?para\s?armas|aceite\s?de\s?arma|lubricante\s?fire)\b/i,'FireKlean gun lube'],
+// Xenomorph sealing foam — ES: "espuma selladora xenomorph","espuma xenomorph"
+[/\b(xenomorph|xeno\s?morph|espuma\s?selladora\s?xeno|espuma\s?xenomorph|espuma\s?xeno|xeno)\b/i,'Xenomorph sealing foam'],
+// Shustrilo sealing foam — ES: "espuma shustrilo","shustrilo"
+[/\b(shustrilo|shustrillo|chustrilo|espuma\s?shustrilo|sellador\s?shustrilo)\b/i,'Shustrilo sealing foam'],
+// Poxeram cold welding — ES: "soldadura en frío","poxeram","pegamento epóxico"
+[/\b(poxeram|pokeram|soldadura\s?en\s?fr[ií]o|cold\s?welding|pegamento\s?ep[oó]xico|poxeram\s?cold)\b/i,'Tube of Poxeram cold welding'],
+// Heat-exchange alkali — ES: "álcali","solución alcalina","limpiador alcalino"
+[/\b(heat[\s-]?exchange\s?alkali|[aá]lcali|soluci[oó]n\s?alcalina|limpiador\s?alcalino|heask|alkali\s?washer)\b/i,'Heat-exchange alkali surface washer'],
+// Fuel conditioner — ES: "acondicionador de combustible","aditivo de combustible"
+[/\b(fuel\s?conditioner|acondicionador\s?de\s?combustible|aditivo\s?de\s?combustible|fuel\s?cond)\b/i,'Fuel conditioner'],
+// Expeditionary fuel tank — ES: "tanque de combustible expedicionario","bidón de gasolina"
+[/\b(expeditionary\s?fuel|tanque\s?expedicionario|bid[oó]n\s?de\s?gasolina|bid[oó]n\s?expedicionario|fuel\s?tank\s?exp)\b/i,'Expeditionary fuel tank'],
+// Coffee Majaica — ES: "café Majaica","café","tarro de café"
+[/\b(coffee\s?majaica|caf[eé]\s?majaica|tarro\s?de\s?caf[eé]|majaica|majáica)\b/i,'Coffee Majaica'],
+// Sodium bicarbonate — ES: "bicarbonato de sodio","bicarbonato"
+[/\b(sodium\s?bicarbonate|bicarbonato\s?de\s?sodio|bicarbonato|soda\s?c[aá]ustica)\b/i,'Sodium bicarbonate'],
+// SAS drive — ES: "unidad SAS","disco SAS"
+[/\b(sas\s?drive|unidad\s?sas|disco\s?sas|ese\s?a\s?ese)\b/i,'SAS drive'],
+// USB Adapter — ES: "adaptador USB"
+[/\b(usb\s?adapter|adaptador\s?usb|usb\s?adaptador)\b/i,'USB Adapter'],
+// Topographic survey maps — ES: "mapas topográficos"
+[/\b(topographic\s?survey|survey\s?maps|mapas\s?topogr[aá]ficos|mapa\s?topogr[aá]fico)\b/i,'Topographic survey maps'],
+// Lab journal — ES: "diario de laboratorio","cuaderno de lab"
+[/\b(lab\s?journal|lab\s?note|diario\s?de\s?laboratorio|cuaderno\s?de\s?lab)\b/i,'Lab. journal'],
+// Battered antique book — ES: "libro antiguo","libro viejo"
+[/\b(battered\s?antique\s?book|antique\s?book|libro\s?antiguo|libro\s?viejo)\b/i,'Battered antique book'],
+// Photo album — ES: "álbum de fotos"
+[/\b(photo\s?album|[aá]lbum\s?de\s?fotos|album\s?fotogr[aá]fico)\b/i,'Photo album'],
+// Diary — ES: "diario","diario personal"
+[/\b(\bdiary\b|diario\s?personal|libreta\s?personal)\b/i,'Diary'],
+// Lucky coin — ES: "moneda de la suerte"
+[/\b(lucky\s?coin|moneda\s?de\s?la\s?suerte)\b/i,'Lucky coin'],
+// Body armor repair kit — ES: "kit de reparación de armadura"
+[/\b(body\s?armor\s?repair|armor\s?repair\s?kit|kit\s?de\s?reparaci[oó]n\s?de\s?armadura|reparar\s?armadura|repair\s?armor)\b/i,'Body armor repair kit'],
+// Weapon repair kit — ES: "kit de reparación de arma"
+[/\b(weapon\s?repair\s?kit|gun\s?repair|kit\s?de\s?reparaci[oó]n\s?de\s?arma|reparar\s?arma|repair\s?weapon)\b/i,'Weapon repair kit'],
+// Cigarette lighter — ES: "encendedor","yesquero"
+[/\b(cigarette\s?lighter|lighter|encendedor|yesquero|mechero)\b/i,'Cigarette lighter'],
+// Matches — ES: "fósforos","cerillos"
+[/\b(\bmatches\b|f[oó]sforos|cerillos|caja\s?de\s?f[oó]sforos)\b/i,'Matches'],
+// Can of thermite — ES: "lata de termita"
+[/\b(can\s?of\s?thermite|thermite|termita|lata\s?de\s?termita)\b/i,'Can of thermite'],
+// Metal scissors — ES: "tijeras"
+[/\b(metal\s?scissors|tijeras|scissors)\b/i,'Metal scissors'],
+// Soap — ES: "jabón","barra de jabón"
+[/\b(\bsoap\b|jab[oó]n|barra\s?de\s?jab[oó]n)\b/i,'Soap'],
+// Toothpaste — ES: "pasta dental","crema dental"
+[/\b(toothpaste|pasta\s?dental|crema\s?dental|dent[ií]frico)\b/i,'Toothpaste'],
+// Toilet paper — ES: "papel higiénico","papel de baño"
+[/\b(toilet\s?paper|papel\s?higi[eé]nico|papel\s?de\s?ba[nñ]o|rollo\s?papel)\b/i,'Toilet paper'],
+// Paid AntiRoach spray — ES: "spray anti-cucarachas","insecticida"
+[/\b(antiroach|anti[\s-]?roach|spray\s?anti\s?cucarachas|insecticida|raid\s?spray)\b/i,'Paid AntiRoach spray'],
+// Shampoo — ES: "champú","shampoo"
+[/\b(shampoo|champ[uú]|shampu)\b/i,'Shampoo'],
+// Bleach — ES: "lejía","cloro"
+[/\b(\bbleach\b|lej[ií]a|\bcloro\b|blanqueador\s?l[ií]quido)\b/i,'Bleach'],
+// Repellent — ES: "repelente de insectos"
+[/\b(repellent|repelente\s?de\s?insectos|repelente|spray\s?repelente)\b/i,'Repellent'],
+// Smoke balaclava — already covered by other categories
+// Secure container Alpha
+[/\b(alpha|alfa|contenedor\s?alfa|contenedor\s?alpha)\b/i,'Secure container Alpha'],
+// ━━━ CIGARRILLOS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[/\b(wilston|cigarrillos\s?wilston|cigarro\s?wilston)\b/i,'Wilston cigarettes'],
+[/\b(malboro|marlboro|cigarrillos\s?marlboro|cigarro\s?marlboro)\b/i,'Marlboro cigarettes'],
+[/\b(apollo\s?soyuz|cigarrillos\s?apollo|cigarro\s?apollo)\b/i,'Apollo Soyuz cigarettes'],
+[/\b(strike\s?cigarettes|cigarrillos\s?strike|cigarro\s?strike)\b/i,'Strike cigarettes'],
 
 // ━━━ LLAVES Y TARJETAS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [/\b(red\s?keycard|tarjeta\s?roja|llave\s?roja)\b/i,'Red keycard'],
